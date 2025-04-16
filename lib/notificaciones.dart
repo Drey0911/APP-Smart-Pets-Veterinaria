@@ -110,10 +110,10 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
       ),
       body: Column(
         children: [
-          ElevatedButton(
+          /*   ElevatedButton(
             onPressed: _mostrarNotificacion,
             child: const Text('Crear Notificación'),
-          ),
+          ), */
           Expanded(
             child:
                 notificaciones.isEmpty

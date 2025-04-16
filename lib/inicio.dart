@@ -5,32 +5,33 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'citas.dart'; // Import citas.dart
 import 'mascotas.dart'; // Import mascotas.dart
-import 'notificaciones.dart'; // Import notificaciones
+import 'notificaciones.dart'; // Import notificaciones.dart
 import 'perfil/perfil.dart'; // Import perfil.dart
 import 'perfil/perfil_acerca_de_nos.dart';
 import 'perfil/perfil_contactanos.dart';
 
-// VARIABLE GLOBAL PARA EL MANEJO DE EL MENSAJE DE PERMISOS
+// Variable global para el manejo del mensaje de permisos
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-void main() => runApp(inicio());
+void main() => runApp(InicioApp());
 
-class inicio extends StatelessWidget {
-  const inicio({super.key});
+class InicioApp extends StatelessWidget {
+  const InicioApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Obtener los argumentos pasados desde login.dart
+    // Obtener argumentos desde login.dart (si existen)
     final Map<String, dynamic>? args =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
 
-    // Valores por defecto en caso de que args sea null
+    // Valores por defecto si args es null
     final String nombreUsuario = args?['nombreusu'] ?? 'Usuario';
     final String email = args?['email'] ?? '';
     final String password = args?['password'] ?? '';
 
     return MaterialApp(
+      scaffoldMessengerKey: scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
       title: 'SmartPets Menú',
       theme: ThemeData(primarySwatch: Colors.indigo),
@@ -46,21 +47,21 @@ class inicio extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   final String userName;
   final String email;
-  final String password; // Campo para almacenar la contraseña del usuario
+  final String password; // Contraseña del usuario
 
   const MyHomePage({
     super.key,
     required this.userName,
     required this.email,
     required this.password,
-  }); // Acepta el nombre del usuario y demas entradas
+  });
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Variables para almacenar la información del usuario
+  // Variables de usuario
   late String userName;
   late String email;
   late String password;
@@ -69,20 +70,21 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   List<Widget> _pages = [];
 
-  // Historial de navegación para controlar el botón de retroceso
+  // GlobalKey para conservar la instancia de la pantalla Citas
+  final GlobalKey<CitasState> citasKey = GlobalKey<CitasState>();
+
+  // Historial de navegación para el botón de retroceso
   final List<int> _navigationHistory = [0];
 
   @override
   void initState() {
     super.initState();
-    // Inicializa las variables con los valores recibidos
     userName = widget.userName;
     email = widget.email;
     password = widget.password;
 
     _cargarEstadoNotificaciones();
     _initializePages();
-    // Verificar permisos de notificaciones cuando se inicia la pantalla
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _verificarPermisosNotificaciones();
     });
@@ -90,8 +92,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _initializePages() {
     _pages = [
-      PaginaInicio(userName: userName),
-      Citas(),
+      // Se pasa un callback asíncrono para agregar citas a la instancia de Citas y actualizar notificaciones
+      PaginaInicio(
+        userName: userName,
+        onNuevaCita: (nuevaCita) async {
+          citasKey.currentState?.addCita(nuevaCita);
+          await _cargarEstadoNotificaciones();
+        },
+      ),
+      Citas(key: citasKey),
       Mascotas(),
       Perfil(
         userName: userName,
@@ -104,33 +113,18 @@ class _MyHomePageState extends State<MyHomePage> {
     ];
   }
 
-  // Función para actualizar el perfil y todas las páginas que dependen de esos datos PAGINAS DEPENDIENTES
+  // Actualiza el perfil y reconstruye las páginas
   void _updateProfile(String newUserName, String newEmail, String newPassword) {
     setState(() {
       userName = newUserName;
       email = newEmail;
       password = newPassword;
-
-      // También actualiza las páginas en el IndexedStack
-      _pages = [
-        PaginaInicio(userName: userName),
-        Citas(),
-        Mascotas(),
-        Perfil(
-          userName: userName,
-          email: email,
-          password: password,
-          onProfileUpdated: _updateProfile,
-        ),
-        AcercaDeNosotros(),
-        Contactanos(),
-      ];
+      _initializePages(); // Reconstruir las páginas con los datos actualizados
     });
   }
 
   void _onItemTapped(int index) {
     setState(() {
-      // Si seleccionamos un índice diferente, lo agregamos al historial
       if (_selectedIndex != index) {
         _navigationHistory.add(index);
       }
@@ -138,59 +132,49 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // Método para manejar el botón de retroceso
   Future<bool> _onWillPop() async {
     if (_navigationHistory.length > 1) {
-      // Eliminar el índice actual
       _navigationHistory.removeLast();
-      // Establecer como índice activo el anterior en el historial
       setState(() {
         _selectedIndex = _navigationHistory.last;
       });
-      return false; // No salir de la app
+      return false;
     }
 
-    // Si no hay historial (ya estamos en la pantalla inicial), mostrar diálogo de confirmación
     final shouldExit = await showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
-            title: Text('¿Salir de la aplicación?'),
-            content: Text('¿Estás seguro que quieres salir de SmartPets?'),
+            title: const Text('¿Salir de la aplicación?'),
+            content: const Text(
+              '¿Estás seguro que quieres salir de SmartPets?',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text('Cancelar'),
+                child: const Text('Cancelar'),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text('Salir'),
+                child: const Text('Salir'),
               ),
             ],
           ),
     );
-
     return shouldExit ?? false;
   }
 
-  // Método para verificar y solicitar permisos de notificaciones
   Future<void> _verificarPermisosNotificaciones() async {
-    // Verificar el estado actual del permiso
     final status = await Permission.notification.status;
-
-    // Si el permiso no se ha solicitado aún, mostrar el diálogo de solicitud
     if (status.isDenied) {
-      // Solicitar permiso
       await Permission.notification.request().then((result) {
         _mostrarResultadoPermiso(result);
       });
     }
   }
 
-  // Mostrar el resultado del permiso con un mensaje
   void _mostrarResultadoPermiso(PermissionStatus status) {
     String mensaje = '';
-
     if (status.isGranted) {
       mensaje = 'Permisos de notificación concedidos';
     } else if (status.isDenied) {
@@ -198,8 +182,6 @@ class _MyHomePageState extends State<MyHomePage> {
     } else if (status.isPermanentlyDenied) {
       mensaje =
           'Permisos denegados permanentemente. Puede habilitarlos en la configuración';
-
-      // Mostrar un SnackBar con opción para abrir la configuración
       scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(
           content: Text(mensaje),
@@ -207,13 +189,11 @@ class _MyHomePageState extends State<MyHomePage> {
             label: 'Abrir Configuración',
             onPressed: () => openAppSettings(),
           ),
-          duration: Duration(seconds: 5),
+          duration: const Duration(seconds: 5),
         ),
       );
-      return; // Salir para evitar mostrar el SnackBar normal
+      return;
     }
-
-    // Mostrar un SnackBar normal para los otros casos
     if (mensaje.isNotEmpty) {
       scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(mensaje)),
@@ -235,7 +215,7 @@ class _MyHomePageState extends State<MyHomePage> {
       onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('SmartPets'),
+          title: const Text('SmartPets'),
           actions: [
             Stack(
               alignment: Alignment.center,
@@ -263,20 +243,16 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     );
                   },
-                  icon: Icon(Icons.notifications),
+                  icon: const Icon(Icons.notifications),
                 ),
                 if (_tieneNotificacionesNoLeidas)
-                  Positioned(
+                  const Positioned(
                     right: 8,
                     top: 8,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
+                    child: Icon(
+                      Icons.brightness_1,
+                      size: 12,
+                      color: Colors.red,
                     ),
                   ),
               ],
@@ -286,7 +262,7 @@ class _MyHomePageState extends State<MyHomePage> {
         body: IndexedStack(index: _selectedIndex, children: _pages),
         bottomNavigationBar: Container(
           height: 88,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Color(0xFFECECEC),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
@@ -298,7 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: GestureDetector(
                   onTap: () => _onItemTapped(index),
                   child: Container(
-                    padding: EdgeInsets.symmetric(vertical: 15),
+                    padding: const EdgeInsets.symmetric(vertical: 15),
                     decoration: BoxDecoration(
                       color: isSelected ? Colors.blue[100] : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
@@ -308,14 +284,14 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         Icon(
                           _getIconForIndex(index),
-                          color: Color(0xFF0A3C5E),
+                          color: const Color(0xFF0A3C5E),
                           size: 30,
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           _getLabelForIndex(index),
                           style: TextStyle(
-                            color: Color(0xFF0A3C5E),
+                            color: const Color(0xFF0A3C5E),
                             fontSize: 16,
                             fontWeight:
                                 isSelected
@@ -366,14 +342,20 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-// 🎯 Página de Inicio con Carousel Manual
+// ===========================================================================
+// PÁGINA DE INICIO (CON CAROUSEL Y SECCIÓN DE SERVICIOS)
+// ===========================================================================
+
 class PaginaInicio extends StatefulWidget {
-  final String userName; // Field to hold the user's name
+  final String userName; // Para dar la bienvenida
+  final Future<void> Function(Map<String, dynamic>)
+  onNuevaCita; // Callback para enviar nueva cita
 
   const PaginaInicio({
     super.key,
     required this.userName,
-  }); // Accept the user's name
+    required this.onNuevaCita,
+  });
 
   @override
   _PaginaInicioState createState() => _PaginaInicioState();
@@ -386,83 +368,82 @@ class _PaginaInicioState extends State<PaginaInicio> {
     'images/banner3.png',
   ];
 
+  // Actualiza las URL según a dónde desees navegar
   final List<String> urls = [
-    'https://www.youtube.com/watch?v=z_70XoQB5Yg/banner1',
-    'https://www.youtube.com/watch?v=FVUQfoCAUGk/banner2',
-    'https://example.com/banner3',
+    'https://www.youtube.com/watch?v=z_70XoQB5Yg',
+    'https://www.youtube.com/watch?v=FVUQfoCAUGk',
+    'https://www.youtube.com/watch?v=z_70XoQB5Yg',
   ];
 
   int _currentPage = 0;
   late PageController _pageController;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
-
-    // CARROUSEL AUTOMATICO
-    Future.delayed(Duration.zero, () {
-      Timer.periodic(Duration(seconds: 6), (Timer timer) {
-        if (_pageController.hasClients) {
-          int nextPage = (_currentPage + 1) % carouselImages.length;
-          _pageController.animateToPage(
-            nextPage,
-            duration: Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-          );
-        }
-      });
+    _timer = Timer.periodic(const Duration(seconds: 6), (Timer timer) {
+      if (_pageController.hasClients) {
+        int nextPage = (_currentPage + 1) % carouselImages.length;
+        _pageController.animateToPage(
+          nextPage,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
     });
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
 
   Future<void> _launchURL(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
+    final Uri uri = Uri.parse(url);
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      throw 'Could not launch $url';
+      throw 'No se pudo acceder a la URL: $url';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      // APLICACION SCROLL: Se agregó SingleChildScrollView para permitir el desplazamiento vertical de toda la página.
       child: Column(
         children: [
-          // Welcome Text
+          // Bienvenida
           Padding(
             padding: const EdgeInsets.only(top: 20.0, left: 20.0),
             child: Align(
               alignment: Alignment.centerLeft,
               child: RichText(
                 text: TextSpan(
-                  style: TextStyle(
-                    color: const Color.fromARGB(255, 17, 46, 88),
+                  style: const TextStyle(
+                    color: Color.fromARGB(255, 17, 46, 88),
                     fontSize: 23,
                   ),
                   children: [
-                    TextSpan(text: 'Bienvenido '),
+                    const TextSpan(text: 'Bienvenido '),
                     TextSpan(
                       text: '${widget.userName} ',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    TextSpan(text: '!'),
+                    const TextSpan(text: '!'),
                   ],
                 ),
               ),
             ),
           ),
-
-          // Manual Carousel
-          SizedBox(height: 20),
+          // Carousel
+          const SizedBox(height: 20),
           SizedBox(
-            height: 200, // Increased height for the banner
+            height: 200,
             child: Stack(
               alignment: Alignment.center,
               children: [
@@ -478,7 +459,7 @@ class _PaginaInicioState extends State<PaginaInicio> {
                     return GestureDetector(
                       onTap: () => _launchURL(urls[index]),
                       child: Container(
-                        margin: EdgeInsets.symmetric(horizontal: 20),
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
                           image: DecorationImage(
@@ -498,13 +479,13 @@ class _PaginaInicioState extends State<PaginaInicio> {
                       return Container(
                         width: 10,
                         height: 10,
-                        margin: EdgeInsets.symmetric(horizontal: 5),
+                        margin: const EdgeInsets.symmetric(horizontal: 5),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color:
                               _currentPage == index
                                   ? const Color.fromARGB(255, 17, 46, 88)
-                                  : const Color.fromARGB(255, 255, 255, 255),
+                                  : Colors.white,
                         ),
                       );
                     }),
@@ -513,15 +494,14 @@ class _PaginaInicioState extends State<PaginaInicio> {
               ],
             ),
           ),
-
-          // Title for Services Section
+          // Título de Servicios
           Align(
             alignment: Alignment.centerLeft,
             child: Padding(
               padding: const EdgeInsets.only(
                 left: 20.0,
-                top: 50.0, // Reduced top margin
-                bottom: 15.0, // Added bottom margin for spacing
+                top: 50.0,
+                bottom: 15.0,
               ),
               child: Text(
                 'Servicios:',
@@ -533,13 +513,12 @@ class _PaginaInicioState extends State<PaginaInicio> {
               ),
             ),
           ),
-
-          // Services Section
+          // Sección de Servicios con botones.
           Container(
             margin: EdgeInsets.zero,
-            padding: EdgeInsets.all(20), // Adjusted padding
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 colors: [
                   Color.fromRGBO(170, 217, 238, 1),
                   Color.fromRGBO(140, 189, 210, 1),
@@ -548,8 +527,10 @@ class _PaginaInicioState extends State<PaginaInicio> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(50)),
-              boxShadow: [
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(50),
+              ),
+              boxShadow: const [
                 BoxShadow(
                   color: Colors.black26,
                   blurRadius: 10,
@@ -558,137 +539,190 @@ class _PaginaInicioState extends State<PaginaInicio> {
               ],
             ),
             child: GridView.count(
-              shrinkWrap: true, // Prevents GridView from scrolling
-              physics:
-                  NeverScrollableScrollPhysics(), // Disable GridView scroll
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
-              crossAxisSpacing: 20, // Increased spacing between buttons
-              mainAxisSpacing: 38, // Increased spacing between buttons
-              childAspectRatio: 1.4, // Adjusted to make buttons smaller
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 38,
+              childAspectRatio: 1.4,
               children: [
+                // Botón "Agendar cita" (flujo: abrir FormularioTipoCita y luego FormularioCita)
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 160, 194, 214),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    elevation: 10, // Added elevation for shadow effect
-                    shadowColor: Colors.black54, // Shadow color
+                    elevation: 10,
+                    shadowColor: Colors.black54,
                   ),
                   onPressed: () {
-                    // Add navigation or action
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const FormularioTipoCita(),
+                      ),
+                    ).then((tipoSeleccionado) {
+                      if (tipoSeleccionado != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) =>
+                                    FormularioCita(tipoCita: tipoSeleccionado),
+                          ),
+                        ).then((nuevaCita) {
+                          if (nuevaCita != null) {
+                            widget.onNuevaCita(nuevaCita);
+                          }
+                        });
+                      }
+                    });
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       Icon(
                         Icons.calendar_today,
-                        size: 60, // Increased icon size
-                        color: const Color.fromARGB(255, 17, 46, 88),
+                        size: 60,
+                        color: Color.fromARGB(255, 17, 46, 88),
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Agendar cita',
+                        'Agendar citas',
                         style: TextStyle(
-                          color: const Color.fromARGB(255, 17, 46, 88),
+                          color: Color.fromARGB(255, 17, 46, 88),
                           fontWeight: FontWeight.bold,
-                          fontSize: 18, // Increased font size
+                          fontSize: 18,
                         ),
                       ),
                     ],
                   ),
                 ),
+                // Botón Vacunación.
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 160, 194, 214),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    elevation: 10, // Added elevation for shadow effect
-                    shadowColor: Colors.black54, // Shadow color
+                    elevation: 10,
+                    shadowColor: Colors.black54,
                   ),
                   onPressed: () {
-                    // Add navigation or action
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => FormularioCita(tipoCita: 'Vacunacion'),
+                      ),
+                    ).then((nuevaCita) {
+                      if (nuevaCita != null) {
+                        widget.onNuevaCita(nuevaCita);
+                      }
+                    });
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       Icon(
                         Icons.medical_services,
-                        size: 60, // Increased icon size
-                        color: const Color.fromARGB(255, 17, 46, 88),
+                        size: 60,
+                        color: Color.fromARGB(255, 17, 46, 88),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Vacunación',
                         style: TextStyle(
-                          color: const Color.fromARGB(255, 17, 46, 88),
+                          color: Color.fromARGB(255, 17, 46, 88),
                           fontWeight: FontWeight.bold,
-                          fontSize: 18, // Increased font size
+                          fontSize: 18,
                         ),
                       ),
                     ],
                   ),
                 ),
+                // Botón Limpieza.
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 160, 194, 214),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    elevation: 10, // Added elevation for shadow effect
-                    shadowColor: Colors.black54, // Shadow color
+                    elevation: 10,
+                    shadowColor: Colors.black54,
                   ),
                   onPressed: () {
-                    // Add navigation or action
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => FormularioCita(tipoCita: 'Limpieza'),
+                      ),
+                    ).then((nuevaCita) {
+                      if (nuevaCita != null) {
+                        widget.onNuevaCita(nuevaCita);
+                      }
+                    });
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       Icon(
                         Icons.clean_hands,
-                        size: 60, // Increased icon size
-                        color: const Color.fromARGB(255, 17, 46, 88),
+                        size: 60,
+                        color: Color.fromARGB(255, 17, 46, 88),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Limpieza',
                         style: TextStyle(
-                          color: const Color.fromARGB(255, 17, 46, 88),
+                          color: Color.fromARGB(255, 17, 46, 88),
                           fontWeight: FontWeight.bold,
-                          fontSize: 18, // Increased font size
+                          fontSize: 18,
                         ),
                       ),
                     ],
                   ),
                 ),
+                // Botón Peluquería.
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(255, 160, 194, 214),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(30),
                     ),
-                    elevation: 10, // Added elevation for shadow effect
-                    shadowColor: Colors.black54, // Shadow color
+                    elevation: 10,
+                    shadowColor: Colors.black54,
                   ),
                   onPressed: () {
-                    // Add navigation or action
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => FormularioCita(tipoCita: 'Peluqueria'),
+                      ),
+                    ).then((nuevaCita) {
+                      if (nuevaCita != null) {
+                        widget.onNuevaCita(nuevaCita);
+                      }
+                    });
                   },
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       Icon(
                         Icons.cut,
-                        size: 60, // Increased icon size
-                        color: const Color.fromARGB(255, 17, 46, 88),
+                        size: 60,
+                        color: Color.fromARGB(255, 17, 46, 88),
                       ),
                       SizedBox(height: 8),
                       Text(
                         'Peluquería',
                         style: TextStyle(
-                          color: const Color.fromARGB(255, 17, 46, 88),
+                          color: Color.fromARGB(255, 17, 46, 88),
                           fontWeight: FontWeight.bold,
-                          fontSize: 18, // Increased font size
+                          fontSize: 18,
                         ),
                       ),
                     ],
@@ -699,6 +733,6 @@ class _PaginaInicioState extends State<PaginaInicio> {
           ),
         ],
       ),
-    ); // APLICACION SCROLL: Aquí se cierra el SingleChildScrollView que permite el desplazamiento vertical de toda la página.
+    );
   }
 }

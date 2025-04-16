@@ -95,7 +95,7 @@ class _AuthScreenState extends State<AuthScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => inicio(),
+            builder: (context) => InicioApp(),
             settings: RouteSettings(
               arguments: {
                 'nombreusu': registeredName ?? 'Usuario',
