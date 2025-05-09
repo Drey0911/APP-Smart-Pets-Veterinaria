@@ -22,40 +22,62 @@ class _UsuariosAdminState extends State<UsuariosAdmin> {
     _cargarUsuarios();
   }
 
-  Future<void> _cargarUsuarios() async {
-    try {
-      DatabaseEvent event = await _dbRef.once();
-      DataSnapshot snapshot = event.snapshot;
+  void _cargarUsuarios() {
+    _dbRef.onValue.listen(
+      (DatabaseEvent event) {
+        final data = event.snapshot.value;
 
-      if (snapshot.value != null) {
-        Map<dynamic, dynamic> usuarios =
-            snapshot.value as Map<dynamic, dynamic>;
-        _usuarios.clear();
+        // Verifica si el snapshot no es nulo y es un mapa
+        if (data != null && data is Map<dynamic, dynamic>) {
+          setState(() {
+            _usuarios.clear();
 
-        usuarios.forEach((key, value) {
-          if (value['rol'] == 'Cliente') {
-            _usuarios.add({
-              'uid': key,
-              'nombre': value['nombre'] ?? 'Sin nombre',
-              'email': value['email'] ?? 'Sin email',
-              'fechaRegistro': value['fechaRegistro'] ?? 'Desconocida',
+            data.forEach((key, value) {
+              if (value is Map && value['rol']?.toString() == 'Cliente') {
+                _usuarios.add({
+                  'uid': key.toString(),
+                  'nombre': value['nombre']?.toString() ?? 'Sin nombre',
+                  'email': value['email']?.toString() ?? 'Sin email',
+                  'fechaRegistro': _formatDate(value['fechaRegistro']),
+                });
+              }
             });
-          }
-        });
 
-        setState(() {
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
+            // Ordena los usuarios por fecha de registro (más reciente primero)
+            _usuarios.sort(
+              (a, b) => b['fechaRegistro'].compareTo(a['fechaRegistro']),
+            );
+            _isLoading = false; // Detener el estado de carga
+          });
+        } else {
+          setState(() {
+            _usuarios.clear(); // Si no hay usuarios, limpiar la lista
+            _isLoading = false; // Detener el estado de carga
+          });
+        }
+      },
+      onError: (error) {
+        if (mounted) {
+          _mostrarErrorDialog('Error al cargar usuarios: ${error.toString()}');
+        }
+        setState(() => _isLoading = false);
+      },
+    );
+  }
+
+  // Función auxiliar para formatear la fecha
+  String _formatDate(dynamic timestamp) {
+    if (timestamp == null) return 'Desconocida';
+
+    try {
+      if (timestamp is int || timestamp is double) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          timestamp.toInt(),
+        ).toString().substring(0, 16);
       }
+      return timestamp.toString();
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _mostrarErrorDialog('Error al cargar usuarios: $e');
+      return timestamp.toString();
     }
   }
 
