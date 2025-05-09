@@ -100,11 +100,9 @@ class _MascotasState extends State<Mascotas> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
+              Color.fromRGBO(30, 75, 105, 1),
               Color.fromRGBO(150, 193, 212, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-              Color.fromRGBO(30, 75, 105, 1),
+              Color.fromRGBO(150, 193, 212, 1),
             ],
           ),
         ),
@@ -113,7 +111,7 @@ class _MascotasState extends State<Mascotas> {
             // Header
             Container(
               padding: EdgeInsets.only(
-                top: 60,
+                top: 80,
                 left: 20,
                 right: 20,
                 bottom: 20,

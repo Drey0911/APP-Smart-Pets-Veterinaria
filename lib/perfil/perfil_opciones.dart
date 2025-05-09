@@ -152,13 +152,6 @@ class _PerfilOpcionesState extends State<PerfilOpciones> {
             color: const Color.fromARGB(255, 17, 46, 88),
             fontSize: 25,
             fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Color.fromRGBO(140, 189, 210, 1),
-                offset: Offset(0, 3),
-                blurRadius: 6,
-              ),
-            ],
           ),
         ),
         leading: IconButton(
@@ -339,7 +332,7 @@ class _PerfilOpcionesState extends State<PerfilOpciones> {
               onPressed: () {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (context) => login()),
+                  MaterialPageRoute(builder: (context) => Login()),
                   (route) => false,
                 );
               },

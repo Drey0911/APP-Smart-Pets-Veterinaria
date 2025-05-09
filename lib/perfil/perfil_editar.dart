@@ -60,14 +60,6 @@ class _EditarPerfilState extends State<EditarPerfil> {
             color: azulOscuro, // Azul oscuro
             fontSize: 25,
             fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                // Sombra del texto
-                color: Color.fromRGBO(140, 189, 210, 1),
-                offset: Offset(0, 3),
-                blurRadius: 6,
-              ),
-            ],
           ),
         ),
         leading: IconButton(

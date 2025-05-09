@@ -20,7 +20,8 @@ class Contactanos extends StatelessWidget {
             Icons.arrow_back, // Ícono de retroceso.
             color: const Color.fromARGB(255, 17, 46, 88), // Color azul oscuro.
           ),
-          onPressed: () => Navigator.pop(context), // Volver a la pantalla anterior.
+          onPressed:
+              () => Navigator.pop(context), // Volver a la pantalla anterior.
         ),
         title: Text(
           "Contáctanos", // Título del AppBar.
@@ -28,21 +29,16 @@ class Contactanos extends StatelessWidget {
             color: const Color.fromARGB(255, 17, 46, 88),
             fontSize: 25,
             fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Color.fromRGBO(140, 189, 210, 1), // Sombra azul clara.
-                offset: Offset(0, 3), // Posición de la sombra.
-              ),
-            ],
           ),
         ),
         centerTitle: true, // Centrar el título.
       ),
-      
+
       // Cuerpo principal de la pantalla.
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient( // Degradado de fondo.
+          gradient: LinearGradient(
+            // Degradado de fondo.
             colors: [
               Color.fromRGBO(150, 195, 214, 1),
               Color.fromRGBO(150, 195, 214, 1),
@@ -51,7 +47,8 @@ class Contactanos extends StatelessWidget {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: SingleChildScrollView( // Permite desplazamiento si hay mucho contenido.
+        child: SingleChildScrollView(
+          // Permite desplazamiento si hay mucho contenido.
           child: Column(
             children: [
               SizedBox(height: 20), // Espacio vertical.
@@ -62,7 +59,9 @@ class Contactanos extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(50)), // Bordes redondeados superiores.
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(50),
+                  ), // Bordes redondeados superiores.
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black26,
@@ -77,16 +76,34 @@ class Contactanos extends StatelessWidget {
                     Center(
                       child: Column(
                         children: [
-                          _buildSectionTitle('Información de Contacto'), // Título de la sección.
+                          _buildSectionTitle(
+                            'Información de Contacto',
+                          ), // Título de la sección.
                           SizedBox(height: 20),
                         ],
                       ),
                     ),
                     // Información de contacto.
-                    _buildContactInfo(Icons.email, 'Email', 'correo@smartpets.com'),
-                    _buildContactInfo(Icons.phone, 'Teléfono', '+57 300 123 4567'),
-                    _buildContactInfo(Icons.location_on, 'Dirección', 'Calle 123 #45-67, Bogotá, Colombia'),
-                    _buildContactInfo(Icons.language, 'Web', 'www.smartpets.com'),
+                    _buildContactInfo(
+                      Icons.email,
+                      'Email',
+                      'correo@smartpets.com',
+                    ),
+                    _buildContactInfo(
+                      Icons.phone,
+                      'Teléfono',
+                      '+57 300 123 4567',
+                    ),
+                    _buildContactInfo(
+                      Icons.location_on,
+                      'Dirección',
+                      'Calle 123 #45-67, Bogotá, Colombia',
+                    ),
+                    _buildContactInfo(
+                      Icons.language,
+                      'Web',
+                      'www.smartpets.com',
+                    ),
                     SizedBox(height: 30),
                     _buildSectionTitle('Síguenos en Redes'),
                     SizedBox(height: 20),

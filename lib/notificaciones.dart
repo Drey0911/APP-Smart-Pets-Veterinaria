@@ -51,7 +51,8 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
     widget.onNotificacionesCambiadas(notificaciones.isNotEmpty);
   }
 
-  Future<void> _mostrarNotificacion() async {
+  //PARA PRUEBAS
+  /*   Future<void> _mostrarNotificacion() async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
           'channel_id',
@@ -78,7 +79,7 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
       notificaciones.insert(0, nuevaNotificacion);
       _guardarNotificaciones();
     });
-  }
+  } */
 
   Future<void> _eliminarNotificacion(int index) async {
     setState(() {
@@ -97,39 +98,100 @@ class _NotificacionesPageState extends State<NotificacionesPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Notificaciones'),
+        title: const Text(
+          'Notificaciones',
+          style: TextStyle(
+            color: Color.fromARGB(255, 17, 46, 88), // Azul oscuro
+            fontSize: 25,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.white, // Fondo blanco para la AppBar
+        iconTheme: const IconThemeData(
+          color: Color.fromARGB(255, 17, 46, 88), // Íconos azules
+        ),
         actions: [
           if (notificaciones.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_sweep),
               onPressed: _limpiarNotificaciones,
               tooltip: 'Limpiar todas',
+              color: const Color.fromARGB(255, 17, 46, 88), // Ícono azul
             ),
         ],
       ),
       body: Column(
         children: [
-          /*   ElevatedButton(
-            onPressed: _mostrarNotificacion,
-            child: const Text('Crear Notificación'),
-          ), */
           Expanded(
             child:
                 notificaciones.isEmpty
-                    ? const Center(child: Text('No hay notificaciones'))
+                    ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_off,
+                            size: 80,
+                            color: const Color(0xFF1E4B69).withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay notificaciones',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: const Color(0xFF1E4B69).withOpacity(0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                      ),
+                    )
                     : ListView.builder(
                       itemCount: notificaciones.length,
                       itemBuilder: (context, index) {
                         return Card(
                           margin: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
                           ),
                           child: ListTile(
-                            title: Text(notificaciones[index]),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            tileColor: const Color(
+                              0xFFF5F5F5,
+                            ), // Fondo gris claro
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                8,
+                              ), // Bordes redondeados
+                            ),
+                            title: Text(
+                              notificaciones[index],
+                              style: const TextStyle(
+                                color: Color.fromARGB(
+                                  255,
+                                  17,
+                                  46,
+                                  88,
+                                ), // Texto azul oscuro
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
+                              icon: const Icon(
+                                Icons.delete,
+                                color: Color.fromARGB(255, 213, 10, 10),
+                              ),
                               onPressed: () => _eliminarNotificacion(index),
                             ),
                           ),

@@ -84,11 +84,9 @@ class CitasState extends State<Citas> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
+              Color.fromRGBO(30, 75, 105, 1),
               Color.fromRGBO(150, 193, 212, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-              Color.fromRGBO(30, 75, 105, 1),
+              Color.fromRGBO(150, 193, 212, 1),
             ],
           ),
         ),
@@ -98,7 +96,7 @@ class CitasState extends State<Citas> {
             // Encabezado.
             Container(
               padding: const EdgeInsets.only(
-                top: 60,
+                top: 80,
                 left: 20,
                 right: 20,
                 bottom: 20,
@@ -398,143 +396,6 @@ class _FormularioTipoCitaState extends State<FormularioTipoCita> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-// ===========================================================================
-// FORMULARIO DE HISTORIAL DE CITAS
-// ===========================================================================
-
-class FormularioHistorial extends StatefulWidget {
-  const FormularioHistorial({Key? key}) : super(key: key);
-
-  @override
-  _FormularioHistorialState createState() => _FormularioHistorialState();
-}
-
-class _FormularioHistorialState extends State<FormularioHistorial> {
-  final List<Map<String, dynamic>> _citasGeneradas = [
-    {
-      'tipo': 'Control',
-      'fecha': '20/03/2025',
-      'doctor': 'Dra. Ana López',
-      'hora': '10:00 AM',
-      'mascota': {
-        'nombre': 'Luna',
-        'raza': 'Golden Retriever',
-        'edad': '2',
-        'genero': 'Femenino',
-      },
-    },
-    {
-      'tipo': 'Vacunacion',
-      'fecha': '25/03/2025',
-      'doctor': 'Dr. Juan Pérez',
-      'hora': '11:30 AM',
-      'mascota': {
-        'nombre': 'Max',
-        'raza': 'Bulldog',
-        'edad': '3',
-        'genero': 'Masculino',
-      },
-    },
-    {
-      'tipo': 'Peluqueria',
-      'fecha': '30/03/2025',
-      'doctor': 'Dr. Carlos García',
-      'hora': '2:00 PM',
-      'mascota': {
-        'nombre': 'Bella',
-        'raza': 'Poodle',
-        'edad': '4',
-        'genero': 'Femenino',
-      },
-    },
-  ];
-
-  void _agregarCitas() {
-    Navigator.pop(context, _citasGeneradas);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Agregar Citas al Historial',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.lightBlue[800],
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color.fromRGBO(150, 193, 212, 1),
-              Color.fromRGBO(30, 75, 105, 1),
-            ],
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Se agregarán 3 citas generadas al historial:',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: _citasGeneradas.length,
-                itemBuilder: (context, index) {
-                  final cita = _citasGeneradas[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8),
-                    child: ListTile(
-                      title: Text(
-                        '${cita['tipo']} - ${cita['doctor']}',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        'Fecha: ${cita['fecha']}\nHora: ${cita['hora']}\nMascota: ${cita['mascota']['nombre']} (${cita['mascota']['raza']})',
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: _agregarCitas,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text(
-                  'Agregar Citas',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

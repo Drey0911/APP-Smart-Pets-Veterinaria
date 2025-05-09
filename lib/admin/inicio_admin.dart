@@ -3,12 +3,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'citas.dart'; // Import citas.dart
-import 'mascotas.dart'; // Import mascotas.dart
-import 'notificaciones.dart'; // Import notificaciones.dart
-import 'perfil/perfil.dart'; // Import perfil.dart
-import 'perfil/perfil_acerca_de_nos.dart';
-import 'perfil/perfil_contactanos.dart';
+import '../citas.dart'; // Import citas.dart
+import 'usuarios_admin.dart'; // Import mascotas.dart
+import '../notificaciones.dart'; // Import notificaciones.dart
+import '../perfil/perfil.dart'; // Import perfil.dart
+import '../perfil/perfil_acerca_de_nos.dart';
+import '../perfil/perfil_contactanos.dart';
 import 'package:firebase_database/firebase_database.dart';
 
 // Variable global para el manejo del mensaje de permisos
@@ -23,17 +23,17 @@ void main() {
           // Obtener solo el UID desde login.dart
           final String uid =
               ModalRoute.of(context)?.settings.arguments as String? ?? '';
-          return InicioApp(uid: uid);
+          return InicioAdminApp(uid: uid);
         },
       ),
     ),
   );
 }
 
-class InicioApp extends StatelessWidget {
+class InicioAdminApp extends StatelessWidget {
   final String uid;
 
-  const InicioApp({super.key, required this.uid});
+  const InicioAdminApp({super.key, required this.uid});
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
         },
       ),
       Citas(key: citasKey),
-      Mascotas(),
+      UsuariosAdmin(),
       Perfil(uid: uid, onProfileUpdated: _updateProfile),
       AcercaDeNosotros(),
       Contactanos(),
@@ -324,7 +324,7 @@ class _MyHomePageState extends State<MyHomePage> {
       case 1:
         return Icons.calendar_month_outlined;
       case 2:
-        return Icons.pets;
+        return Icons.group;
       case 3:
         return Icons.person;
       default:
@@ -337,9 +337,9 @@ class _MyHomePageState extends State<MyHomePage> {
       case 0:
         return 'Inicio';
       case 1:
-        return 'Mis Citas';
+        return 'Citas';
       case 2:
-        return 'Mascotas';
+        return 'Usuarios';
       case 3:
         return 'Perfil';
       default:
