@@ -3,13 +3,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../citas.dart'; // Import citas.dart
-import 'usuarios_admin.dart'; // Import mascotas.dart
+import 'citas_admin.dart'; // Import citas.dart
 import '../notificaciones.dart'; // Import notificaciones.dart
 import '../perfil/perfil.dart'; // Import perfil.dart
 import '../perfil/perfil_acerca_de_nos.dart';
 import '../perfil/perfil_contactanos.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'usuarios_admin.dart';
 
 // Variable global para el manejo del mensaje de permisos
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
@@ -65,7 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Widget> _pages = [];
 
   // GlobalKey para conservar la instancia de la pantalla Citas
-  final GlobalKey<CitasState> citasKey = GlobalKey<CitasState>();
+  final GlobalKey<CitasAdminState> citasKey = GlobalKey<CitasAdminState>();
 
   // Historial de navegación para el botón de retroceso
   final List<int> _navigationHistory = [0];
@@ -88,11 +88,11 @@ class _MyHomePageState extends State<MyHomePage> {
       PaginaInicio(
         uid: uid,
         onNuevaCita: (nuevaCita) async {
-          citasKey.currentState?.addCita(nuevaCita);
+          //citasKey.currentState?.addCita(nuevaCita, uid);
           await _cargarEstadoNotificaciones();
         },
       ),
-      Citas(key: citasKey),
+      CitasAdmin(key: citasKey, uid: uid),
       UsuariosAdmin(),
       Perfil(uid: uid, onProfileUpdated: _updateProfile),
       AcercaDeNosotros(),
@@ -324,7 +324,7 @@ class _MyHomePageState extends State<MyHomePage> {
       case 1:
         return Icons.calendar_month_outlined;
       case 2:
-        return Icons.group;
+        return Icons.people;
       case 3:
         return Icons.person;
       default:
@@ -407,6 +407,39 @@ class _PaginaInicioState extends State<PaginaInicio> {
     super.dispose();
   }
 
+  // Metodo para construir los botones de servicio
+  Widget _buildServiceButton(
+    IconData icon,
+    String label,
+    VoidCallback onPressed,
+  ) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color.fromARGB(255, 160, 194, 214),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        elevation: 10,
+        shadowColor: Colors.black54,
+      ),
+      onPressed: onPressed,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: const Color.fromARGB(255, 17, 46, 88), size: 60),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color.fromARGB(255, 17, 46, 88),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _cargarNombreUsuario() async {
     try {
       final DatabaseReference userRef = FirebaseDatabase.instance.ref(
@@ -452,12 +485,19 @@ class _PaginaInicioState extends State<PaginaInicio> {
                     fontSize: 23,
                   ),
                   children: [
-                    const TextSpan(text: 'Bienvenid@ '),
+                    const WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Icon(
+                        Icons.admin_panel_settings,
+                        color: Color.fromARGB(255, 17, 46, 88),
+                        size: 28,
+                      ),
+                    ),
+                    const TextSpan(text: ' Administrador '),
                     TextSpan(
                       text: '$nombreUsuario ',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    const TextSpan(text: '!'),
                   ],
                 ),
               ),
@@ -554,25 +594,25 @@ class _PaginaInicioState extends State<PaginaInicio> {
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(50),
                 ),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                ],
               ),
               child: GridView.count(
                 shrinkWrap: true,
-                crossAxisCount: 2, // 2 columnas
+                crossAxisCount: 2,
                 crossAxisSpacing: 20,
-                mainAxisSpacing: 40, // espaciado hacia abajo
+                mainAxisSpacing: 30,
                 childAspectRatio: 1.3,
                 children: [
-                  // Botón "Agendar cita" (flujo: abrir FormularioTipoCita y luego FormularioCita)
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 160, 194, 214),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      elevation: 10,
-                      shadowColor: Colors.black54,
-                    ),
-                    onPressed: () {
+                  _buildServiceButton(
+                    Icons.calendar_today,
+                    'Agendar citas',
+                    () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -586,6 +626,7 @@ class _PaginaInicioState extends State<PaginaInicio> {
                               builder:
                                   (context) => FormularioCita(
                                     tipoCita: tipoSeleccionado,
+                                    uid: widget.uid,
                                   ),
                             ),
                           ).then((nuevaCita) {
@@ -596,157 +637,55 @@ class _PaginaInicioState extends State<PaginaInicio> {
                         }
                       });
                     },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 60,
-                          color: Color.fromARGB(255, 17, 46, 88),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Agendar citas',
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 17, 46, 88),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                  // Botón Vacunación.
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 160, 194, 214),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                  _buildServiceButton(Icons.medical_services, 'Vacunación', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => FormularioCita(
+                              tipoCita: 'Vacunacion',
+                              uid: widget.uid,
+                            ),
                       ),
-                      elevation: 10,
-                      shadowColor: Colors.black54,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  FormularioCita(tipoCita: 'Vacunacion'),
-                        ),
-                      ).then((nuevaCita) {
-                        if (nuevaCita != null) {
-                          widget.onNuevaCita(nuevaCita);
-                        }
-                      });
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.medical_services,
-                          size: 60,
-                          color: Color.fromARGB(255, 17, 46, 88),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Vacunación',
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 17, 46, 88),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Botón Limpieza.
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 160, 194, 214),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                    ).then((nuevaCita) {
+                      if (nuevaCita != null) {
+                        widget.onNuevaCita(nuevaCita);
+                      }
+                    });
+                  }),
+                  _buildServiceButton(Icons.clean_hands, 'Limpieza', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => FormularioCita(
+                              tipoCita: 'Limpieza',
+                              uid: widget.uid,
+                            ),
                       ),
-                      elevation: 10,
-                      shadowColor: Colors.black54,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => FormularioCita(tipoCita: 'Limpieza'),
-                        ),
-                      ).then((nuevaCita) {
-                        if (nuevaCita != null) {
-                          widget.onNuevaCita(nuevaCita);
-                        }
-                      });
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.clean_hands,
-                          size: 60,
-                          color: Color.fromARGB(255, 17, 46, 88),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Limpieza',
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 17, 46, 88),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Botón Peluquería.
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromARGB(255, 160, 194, 214),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                    ).then((nuevaCita) {
+                      if (nuevaCita != null) {
+                        widget.onNuevaCita(nuevaCita);
+                      }
+                    });
+                  }),
+                  _buildServiceButton(Icons.cut, 'Peluquería', () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => FormularioCita(
+                              tipoCita: 'Peluqueria',
+                              uid: widget.uid,
+                            ),
                       ),
-                      elevation: 10,
-                      shadowColor: Colors.black54,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  FormularioCita(tipoCita: 'Peluqueria'),
-                        ),
-                      ).then((nuevaCita) {
-                        if (nuevaCita != null) {
-                          widget.onNuevaCita(nuevaCita);
-                        }
-                      });
-                    },
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(
-                          Icons.cut,
-                          size: 60,
-                          color: Color.fromARGB(255, 17, 46, 88),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Peluquería',
-                          style: TextStyle(
-                            color: Color.fromARGB(255, 17, 46, 88),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                    ).then((nuevaCita) {
+                      if (nuevaCita != null) {
+                        widget.onNuevaCita(nuevaCita);
+                      }
+                    });
+                  }),
                 ],
               ),
             ),

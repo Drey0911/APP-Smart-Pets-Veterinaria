@@ -1,36 +1,39 @@
-import 'package:flutter/material.dart'; // Importa los widgets y materiales de diseño de Flutter.
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_database/firebase_database.dart';
+import '../login.dart';
+import '../theme_model.dart';
 
 class EditarPerfil extends StatefulWidget {
-  // Clase Stateful para permitir cambios dinámicos en la pantalla.
+  final String uid;
   final String userName;
   final String email;
   final String password;
+  final Function(String) onProfileUpdated;
 
   const EditarPerfil({
     Key? key,
+    required this.uid,
     required this.userName,
     required this.email,
     required this.password,
+    required this.onProfileUpdated,
   }) : super(key: key);
 
   @override
-  _EditarPerfilState createState() => _EditarPerfilState(); // Crea el estado asociado.
+  _EditarPerfilState createState() => _EditarPerfilState();
 }
 
 class _EditarPerfilState extends State<EditarPerfil> {
-  late TextEditingController _nameController; // Controlador del campo nombre
-  late TextEditingController _emailController; // Controlador del campo email
-  late TextEditingController
-  _passwordController; // Controlador del campo contraseña
-  bool _isPasswordVisible = false; // Controla la visibilidad de la contraseña
-
-  // Color azul oscuro que se usará en todo el diseño
-  final Color azulOscuro = Color.fromARGB(255, 17, 46, 88);
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  bool _isLoading = false;
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref();
 
   @override
   void initState() {
     super.initState();
-    // Inicializa los controladores con los valores que recibe el widget
     _nameController = TextEditingController(text: widget.userName);
     _emailController = TextEditingController(text: widget.email);
     _passwordController = TextEditingController(text: widget.password);
@@ -38,234 +41,368 @@ class _EditarPerfilState extends State<EditarPerfil> {
 
   @override
   void dispose() {
-    // Libera los recursos al cerrar el widget
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Construye la interfaz de usuario
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent, // Fondo transparente
-        elevation: 0, // Sin sombra
-        // Centra el título del AppBar horizontalmente dentro del espacio disponible.
-        centerTitle: true,
-        title: Text(
-          "Editar Perfil",
-          style: TextStyle(
-            color: azulOscuro, // Azul oscuro
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        leading: IconButton(
-          // Botón de retroceso
-          icon: Icon(Icons.arrow_back, color: azulOscuro),
-          onPressed:
-              () => Navigator.pop(context), // Vuelve a la pantalla anterior
-        ),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(height: 40),
-          CircleAvatar(
-            // Avatar de usuario
-            radius: 70,
-            backgroundColor: azulOscuro,
-            child: Icon(Icons.person, size: 120, color: Colors.white),
-          ),
-          SizedBox(height: 10),
-          Text(
-            widget.userName, // Muestra el nombre actual del usuario
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 25),
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.zero,
-              padding: EdgeInsets.only(
-                left: 20,
-                right: 20,
-                top: 20,
-                bottom: 20,
-              ),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  // Fondo degradado
-                  colors: [
-                    Color.fromRGBO(170, 217, 238, 1),
-                    Color.fromRGBO(140, 189, 210, 1),
-                    Color.fromRGBO(30, 75, 105, 1),
-                  ],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(50)),
-                boxShadow: [
-                  BoxShadow(
-                    // Sombra del contenedor
-                    color: azulOscuro,
-                    blurRadius: 10,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    SizedBox(height: 30),
-                    Text(
-                      'Informacion a editar:',
-                      style: TextStyle(
-                        color: const Color.fromARGB(255, 17, 46, 88),
-                        fontSize: 23,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 40),
-                    _buildFloatingLabelField(
-                      label: "Nombre completo",
-                      controller: _nameController,
-                      icon: Icons.person,
-                    ),
-                    SizedBox(height: 30),
-                    _buildFloatingLabelField(
-                      label: "Correo",
-                      controller: _emailController,
-                      icon: Icons.email,
-                    ),
-                    SizedBox(height: 30),
-                    _buildPasswordFloatingField(), // Campo editable para contraseña con estilo floating
-                    SizedBox(height: 40),
-                    ElevatedButton(
-                      onPressed: () {
-                        // Muestra mensaje de confirmación
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Cambios guardados exitosamente'),
-                          ),
-                        );
-                        // Retorna los nuevos valores al cerrar la pantalla
-                        Navigator.pop(context, {
-                          'name': _nameController.text,
-                          'email': _emailController.text,
-                          'password': _passwordController.text,
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: azulOscuro,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 15,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: Text(
-                        "Guardar",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+  Future<void> _updateProfile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _dbRef.child('usuarios').child(widget.uid).update({
+        'nombre': _nameController.text,
+      });
+
+      widget.onProfileUpdated(_nameController.text);
+
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) {
+          final themeModel = Provider.of<ThemeModel>(context);
+          return Theme(
+            data: Theme.of(context).copyWith(
+              dialogTheme: DialogTheme(
+                backgroundColor:
+                    themeModel.isDarkMode
+                        ? Color.fromRGBO(15, 47, 67, 1)
+                        : Colors.white,
               ),
             ),
+            child: AlertDialog(
+              title: Text(
+                'Nombre actualizado correctamente',
+                style: TextStyle(
+                  color:
+                      themeModel.isDarkMode
+                          ? Colors.white
+                          : const Color.fromARGB(255, 17, 46, 88),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: Text(
+                'la APP se va a reiniciar para guardar cambios',
+                style: TextStyle(
+                  color:
+                      themeModel.isDarkMode
+                          ? Colors.white70
+                          : const Color.fromARGB(255, 17, 46, 88),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (context) => Login()),
+                      (route) => false,
+                    );
+                  },
+                  child: Text(
+                    'Aceptar',
+                    style: TextStyle(
+                      color: const Color.fromARGB(255, 255, 0, 0),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al actualizar: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeModel>(
+      builder: (context, themeModel, child) {
+        final primaryColor =
+            themeModel.isDarkMode
+                ? const Color.fromARGB(255, 160, 194, 214)
+                : const Color.fromARGB(255, 17, 46, 88);
+        final backgroundColor =
+            themeModel.isDarkMode
+                ? Color.fromRGBO(15, 47, 67, 1)
+                : Colors.white;
+        final cardColor =
+            themeModel.isDarkMode
+                ? Color.fromRGBO(15, 47, 67, 1)
+                : const Color.fromARGB(124, 255, 255, 255);
+
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            title: Text(
+              "Editar Perfil",
+              style: TextStyle(
+                color: primaryColor,
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back, color: primaryColor),
+              onPressed: () => Navigator.pop(context),
+            ),
           ),
-        ],
-      ),
+          body: Container(
+            color: backgroundColor,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 40),
+                CircleAvatar(
+                  radius: 70,
+                  backgroundColor: primaryColor,
+                  child: Icon(
+                    Icons.person,
+                    size: 120,
+                    color:
+                        themeModel.isDarkMode
+                            ? Color.fromRGBO(15, 47, 67, 1)
+                            : Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  widget.userName,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
+                const SizedBox(height: 25),
+                Expanded(
+                  child: Container(
+                    margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 20,
+                      bottom: 20,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Color.fromRGBO(170, 217, 238, 1),
+                          Color.fromRGBO(140, 189, 210, 1),
+                          Color.fromRGBO(30, 75, 105, 1),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(50),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 30),
+                          Text(
+                            'Información del perfil:',
+                            style: TextStyle(
+                              color: const Color.fromARGB(255, 17, 46, 88),
+                              fontSize: 23,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 40),
+                          _buildEditableField(
+                            label: "Nombre completo",
+                            controller: _nameController,
+                            icon: Icons.person,
+                            primaryColor: primaryColor,
+                            cardColor: cardColor,
+                            themeModel: themeModel,
+                          ),
+                          const SizedBox(height: 30),
+                          _buildReadOnlyField(
+                            label: "Correo electrónico",
+                            value: widget.email,
+                            icon: Icons.email,
+                            primaryColor: primaryColor,
+                            cardColor: cardColor,
+                            themeModel: themeModel,
+                          ),
+                          const SizedBox(height: 30),
+                          _buildPasswordField(
+                            label: "Contraseña",
+                            value: widget.password,
+                            icon: Icons.lock,
+                            primaryColor: primaryColor,
+                            cardColor: cardColor,
+                            themeModel: themeModel,
+                          ),
+                          const SizedBox(height: 40),
+                          _isLoading
+                              ? CircularProgressIndicator(color: primaryColor)
+                              : ElevatedButton(
+                                onPressed: _updateProfile,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 40,
+                                    vertical: 15,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                                child: Text(
+                                  "Guardar cambios",
+                                  style: TextStyle(
+                                    color:
+                                        themeModel.isDarkMode
+                                            ? Color.fromRGBO(15, 47, 67, 1)
+                                            : Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // Método para construir campos de texto con etiqueta flotante
-  Widget _buildFloatingLabelField({
+  Widget _buildEditableField({
     required String label,
     required TextEditingController controller,
     required IconData icon,
+    required Color primaryColor,
+    required Color cardColor,
+    required ThemeModel themeModel,
   }) {
     return TextFormField(
       controller: controller,
-      style: TextStyle(color: azulOscuro),
+      style: TextStyle(color: primaryColor),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: azulOscuro),
+        labelStyle: TextStyle(color: primaryColor),
         floatingLabelStyle: TextStyle(
-          color: azulOscuro,
+          color: primaryColor,
           fontWeight: FontWeight.bold,
         ),
-        prefixIcon: Icon(icon, color: azulOscuro),
+        prefixIcon: Icon(icon, color: primaryColor),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: azulOscuro, width: 1.0),
+          borderSide: BorderSide(color: primaryColor, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: azulOscuro, width: 2.0),
+          borderSide: BorderSide(color: primaryColor, width: 2.0),
         ),
         filled: true,
-        fillColor: const Color.fromARGB(124, 255, 255, 255),
-        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        fillColor: cardColor,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 15,
+        ),
       ),
-      onChanged: (value) {
-        // Actualiza el estado cuando cambia el texto
-        setState(() {});
-      },
     );
   }
 
-  // Método especializado para el campo de contraseña con etiqueta flotante
-  Widget _buildPasswordFloatingField() {
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color primaryColor,
+    required Color cardColor,
+    required ThemeModel themeModel,
+  }) {
     return TextFormField(
-      controller: _passwordController,
-      obscureText: !_isPasswordVisible, // Oculta o muestra la contraseña
-      style: TextStyle(color: azulOscuro),
+      initialValue: value,
+      readOnly: true,
+      style: TextStyle(color: primaryColor),
       decoration: InputDecoration(
-        labelText: "Contraseña",
-        labelStyle: TextStyle(color: azulOscuro),
+        labelText: label,
+        labelStyle: TextStyle(color: primaryColor),
         floatingLabelStyle: TextStyle(
-          color: azulOscuro,
+          color: primaryColor,
           fontWeight: FontWeight.bold,
         ),
-        prefixIcon: Icon(Icons.lock, color: azulOscuro),
-        suffixIcon: IconButton(
-          // Botón para mostrar/ocultar contraseña
-          icon: Icon(
-            _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-            color: azulOscuro,
-          ),
-          onPressed: () {
-            setState(() {
-              _isPasswordVisible = !_isPasswordVisible; // Cambia el estado
-            });
-          },
-        ),
+        prefixIcon: Icon(icon, color: primaryColor),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: azulOscuro, width: 1.0),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide(color: azulOscuro, width: 2.0),
+          borderSide: BorderSide(color: primaryColor, width: 1.0),
         ),
         filled: true,
-        fillColor: const Color.fromARGB(124, 255, 255, 255),
-        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
+        fillColor: cardColor,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 15,
+        ),
       ),
-      onChanged: (value) {
-        // Actualiza el estado cuando cambia el texto
-        setState(() {});
-      },
+    );
+  }
+
+  Widget _buildPasswordField({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color primaryColor,
+    required Color cardColor,
+    required ThemeModel themeModel,
+  }) {
+    return TextFormField(
+      initialValue: "••••••••",
+      readOnly: true,
+      obscureText: true,
+      style: TextStyle(color: primaryColor),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: primaryColor),
+        floatingLabelStyle: TextStyle(
+          color: primaryColor,
+          fontWeight: FontWeight.bold,
+        ),
+        prefixIcon: Icon(icon, color: primaryColor),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(color: primaryColor, width: 1.0),
+        ),
+        filled: true,
+        fillColor: cardColor,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 15,
+        ),
+      ),
     );
   }
 }

@@ -101,12 +101,21 @@ class _AuthScreenState extends State<AuthScreen> {
               'Error',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 17, 46, 88),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color.fromARGB(255, 17, 46, 88),
               ),
             ),
             content: Text(
               message,
-              style: TextStyle(fontSize: 16, color: Colors.black87),
+              style: TextStyle(
+                fontSize: 16,
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black87,
+              ),
             ),
             actions: [
               TextButton(
@@ -424,7 +433,11 @@ class _AuthScreenState extends State<AuthScreen> {
                                     vertical: 10,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFA1C6D7),
+                                    color:
+                                        Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? const Color(0xFFA1C6D7)
+                                            : const Color(0xFFA1C6D7),
                                     borderRadius: BorderRadius.circular(30),
                                   ),
                                   child: const Center(
@@ -589,6 +602,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'uid': userId,
           'fechaRegistro': ServerValue.timestamp,
           'rol': 'Cliente',
+          'tema': 'claro', // tema por defecto
         };
 
         await databaseRef.child('usuarios/$userId').set(userData);
@@ -624,14 +638,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               'Error',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 17, 46, 88),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color.fromARGB(255, 17, 46, 88),
               ),
             ),
             content: Text(
               message,
               style: TextStyle(
                 fontSize: 16,
-                color: const Color.fromARGB(255, 0, 0, 0),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color.fromARGB(255, 17, 46, 88),
               ),
             ),
             actions: <Widget>[

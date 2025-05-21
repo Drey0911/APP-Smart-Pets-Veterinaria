@@ -13,14 +13,20 @@ class AcercaDeNosotros extends StatelessWidget {
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios,
-            color: const Color.fromARGB(255, 17, 46, 88),
+            color:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color.fromARGB(255, 17, 46, 88),
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           "Acerca de nosotros",
           style: TextStyle(
-            color: const Color.fromARGB(255, 17, 46, 88),
+            color:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color.fromARGB(255, 17, 46, 88),
             fontSize: 25,
             fontWeight: FontWeight.bold,
           ),
@@ -129,12 +135,16 @@ class AcercaDeNosotros extends StatelessWidget {
                           child: Text(
                             '© 2025 Smart Pets. Todos los derechos reservados.', // Mensaje de copyright.
                             style: TextStyle(
-                              color: const Color.fromARGB(
-                                255,
-                                17,
-                                46,
-                                88,
-                              ), // Color del texto.
+                              color:
+                                  Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white
+                                      : const Color.fromARGB(
+                                        255,
+                                        17,
+                                        46,
+                                        88,
+                                      ), // Color del texto.
                               fontSize: 12, // Tamaño de la fuente.
                               fontWeight: FontWeight.bold, // Texto en negrita.
                             ),

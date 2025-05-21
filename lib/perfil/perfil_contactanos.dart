@@ -18,7 +18,15 @@ class Contactanos extends StatelessWidget {
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back, // Ícono de retroceso.
-            color: const Color.fromARGB(255, 17, 46, 88), // Color azul oscuro.
+            color:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color.fromARGB(
+                      255,
+                      17,
+                      46,
+                      88,
+                    ), // Color azul oscuro.
           ),
           onPressed:
               () => Navigator.pop(context), // Volver a la pantalla anterior.
@@ -26,7 +34,10 @@ class Contactanos extends StatelessWidget {
         title: Text(
           "Contáctanos", // Título del AppBar.
           style: TextStyle(
-            color: const Color.fromARGB(255, 17, 46, 88),
+            color:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : const Color.fromARGB(255, 17, 46, 88),
             fontSize: 25,
             fontWeight: FontWeight.bold,
           ),

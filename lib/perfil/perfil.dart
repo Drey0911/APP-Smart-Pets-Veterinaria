@@ -1,22 +1,22 @@
-import 'package:flutter/material.dart'; // Librería base de Flutter
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:firebase_database/firebase_database.dart';
-import '../login.dart'; // Pantalla de login
+import '../login.dart';
 import 'perfil_editar.dart';
 import 'perfil_opciones.dart';
 import 'perfil_acerca_de_nos.dart';
 import 'perfil_contactanos.dart';
+import '../theme_model.dart';
 
 class Perfil extends StatefulWidget {
-  final String uid; // Recibe solo el UID
-
-  final Function(String, String, String)
-  onProfileUpdated; // Función para actualizar datos
+  final String uid;
+  final Function(String, String, String) onProfileUpdated;
 
   const Perfil({Key? key, required this.uid, required this.onProfileUpdated})
     : super(key: key);
 
   @override
-  _PerfilState createState() => _PerfilState(); // Crea el estado del widget
+  _PerfilState createState() => _PerfilState();
 }
 
 class _PerfilState extends State<Perfil> {
@@ -59,207 +59,238 @@ class _PerfilState extends State<Perfil> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          "Mi Perfil",
-          style: TextStyle(
-            color: const Color.fromARGB(255, 17, 46, 88),
-            fontSize: 25,
-            fontWeight: FontWeight.bold,
+    return Consumer<ThemeModel>(
+      builder: (context, themeModel, child) {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            elevation: 0,
+            title: Text(
+              "Mi Perfil",
+              style: TextStyle(
+                color:
+                    themeModel.isDarkMode
+                        ? Colors.white
+                        : const Color.fromARGB(255, 17, 46, 88),
+                fontSize: 25,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            centerTitle: true,
+            iconTheme: IconThemeData(
+              color:
+                  themeModel.isDarkMode
+                      ? Colors.white70
+                      : const Color.fromARGB(255, 17, 46, 88),
+            ),
+          ),
+          body:
+              _isLoading
+                  ? Center(
+                    child: CircularProgressIndicator(
+                      color:
+                          themeModel.isDarkMode
+                              ? Colors.white
+                              : const Color.fromARGB(255, 17, 46, 88),
+                    ),
+                  )
+                  : SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 40),
+                        CircleAvatar(
+                          radius: 70,
+                          backgroundColor:
+                              themeModel.isDarkMode
+                                  ? Color.fromRGBO(140, 189, 210, 1)
+                                  : const Color.fromARGB(255, 17, 46, 88),
+                          child: Icon(
+                            Icons.person,
+                            size: 120,
+                            color:
+                                themeModel.isDarkMode
+                                    ? Color.fromRGBO(15, 47, 67, 1)
+                                    : Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          nombreUsuario,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                themeModel.isDarkMode
+                                    ? Colors.white70
+                                    : const Color.fromARGB(255, 17, 46, 88),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          emailUsuario,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color:
+                                themeModel.isDarkMode
+                                    ? Colors.white70
+                                    : const Color.fromARGB(255, 17, 46, 88),
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildEditProfileButton(context, themeModel),
+                        const SizedBox(height: 20),
+                        _buildConfigSection(context, themeModel),
+                      ],
+                    ),
+                  ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEditProfileButton(BuildContext context, ThemeModel themeModel) {
+    return ElevatedButton(
+      onPressed: () async {
+        final updatedData = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => EditarPerfil(
+                  uid: widget.uid,
+                  userName: nombreUsuario,
+                  email: emailUsuario,
+                  password: "hidden",
+                  onProfileUpdated: (newName) {
+                    setState(() {
+                      nombreUsuario = newName;
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Perfil actualizado'),
+                        backgroundColor:
+                            themeModel.isDarkMode
+                                ? Color.fromRGBO(140, 189, 210, 1)
+                                : const Color(0xFF1E4B69),
+                      ),
+                    );
+                  },
+                ),
+          ),
+        );
+
+        if (updatedData != null) {
+          setState(() {
+            nombreUsuario = updatedData['name'];
+            emailUsuario = updatedData['email'];
+            password = updatedData['password'];
+          });
+          widget.onProfileUpdated(nombreUsuario, emailUsuario, password);
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor:
+            themeModel.isDarkMode
+                ? Color.fromRGBO(140, 189, 210, 1)
+                : const Color.fromARGB(255, 17, 46, 88),
+        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+        minimumSize: const Size(150, 50),
+      ),
+      child: Text(
+        "Editar Perfil",
+        style: TextStyle(
+          color:
+              themeModel.isDarkMode
+                  ? const Color.fromARGB(255, 17, 46, 88)
+                  : Colors.white,
+          fontSize: 17,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConfigSection(BuildContext context, ThemeModel themeModel) {
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20.0, top: 10.0, bottom: 10.0),
+            child: Text(
+              'Configuración:',
+              style: TextStyle(
+                color:
+                    themeModel.isDarkMode
+                        ? Colors.white70
+                        : const Color.fromARGB(255, 17, 46, 88),
+                fontSize: 23,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ),
-        centerTitle: true,
-      ),
-      body:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 40),
-                    CircleAvatar(
-                      radius: 70,
-                      backgroundColor: const Color.fromARGB(255, 17, 46, 88),
-                      child: Icon(Icons.person, size: 120, color: Colors.white),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      nombreUsuario,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      emailUsuario,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: const Color.fromARGB(
-                          255,
-                          17,
-                          46,
-                          88,
-                        ).withOpacity(0.7),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () async {
-                        // Navegar a la pantalla de edición de perfil
-                        final updatedData = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => EditarPerfil(
-                                  userName: nombreUsuario,
-                                  email: emailUsuario,
-                                  password: password,
-                                ),
-                          ),
-                        );
-
-                        // Si los datos se actualizaron, recarga el perfil
-                        if (updatedData != null) {
-                          setState(() {
-                            nombreUsuario = updatedData['name'];
-                            emailUsuario = updatedData['email'];
-                            password = updatedData['password'];
-                          });
-
-                          // Llama al callback para actualizar los datos en `MyHomePage`
-                          widget.onProfileUpdated(
-                            nombreUsuario,
-                            emailUsuario,
-                            password,
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 17, 46, 88),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 30,
-                          vertical: 10,
+        Container(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color.fromRGBO(170, 217, 238, 1),
+                Color.fromRGBO(140, 189, 210, 1),
+                Color.fromRGBO(30, 75, 105, 1),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(50)),
+          ),
+          child: GridView.count(
+            shrinkWrap: true,
+            crossAxisCount: 2,
+            crossAxisSpacing: 20,
+            mainAxisSpacing: 30,
+            childAspectRatio: 1.3,
+            children: [
+              _buildConfigButton(context, Icons.settings, "Opciones", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => PerfilOpciones(
+                          userName: nombreUsuario,
+                          uid: widget.uid,
                         ),
-                        minimumSize: const Size(150, 50),
-                      ),
-                      child: const Text(
-                        "Editar Perfil",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          left: 20.0,
-                          top: 10.0,
-                          bottom: 10.0,
-                        ),
-                        child: Text(
-                          'Configuración:',
-                          style: TextStyle(
-                            color: const Color.fromARGB(255, 17, 46, 88),
-                            fontSize: 23,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      margin: EdgeInsets.zero,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color.fromRGBO(170, 217, 238, 1),
-                            Color.fromRGBO(140, 189, 210, 1),
-                            Color.fromRGBO(30, 75, 105, 1),
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(50),
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 10,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: GridView.count(
-                        shrinkWrap: true,
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 20,
-                        mainAxisSpacing: 30,
-                        childAspectRatio: 1.3,
-                        children: [
-                          _buildConfigButton(
-                            context,
-                            Icons.settings,
-                            "Opciones",
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => PerfilOpciones(
-                                        userName: nombreUsuario,
-                                      ),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildConfigButton(
-                            context,
-                            Icons.info,
-                            "Acerca de nosotros",
-                            () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AcercaDeNosotros(),
-                              ),
-                            ),
-                          ),
-                          _buildConfigButton(
-                            context,
-                            Icons.phone,
-                            "Contáctanos",
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => Contactanos(),
-                                ),
-                              );
-                            },
-                          ),
-                          _buildConfigButton(
-                            context,
-                            Icons.logout,
-                            "Cerrar Sesión",
-                            () => _mostrarDialogoConfirmacion(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
+                );
+              }),
+              _buildConfigButton(
+                context,
+                Icons.info,
+                "Acerca de nosotros",
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => AcercaDeNosotros()),
                 ),
               ),
+              _buildConfigButton(context, Icons.phone, "Contáctanos", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Contactanos()),
+                );
+              }),
+              _buildConfigButton(
+                context,
+                Icons.logout,
+                "Cerrar Sesión",
+                () => _mostrarDialogoConfirmacion(context),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -298,53 +329,78 @@ class _PerfilState extends State<Perfil> {
   }
 }
 
-// Diálogo para confirmar cierre de sesión
 void _mostrarDialogoConfirmacion(BuildContext context) {
+  final themeModel = Provider.of<ThemeModel>(context, listen: false);
+
   showDialog(
     context: context,
     builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          'Confirmación',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: const Color.fromARGB(255, 17, 46, 88),
+      return Theme(
+        data: Theme.of(context).copyWith(
+          dialogTheme: DialogTheme(
+            backgroundColor:
+                themeModel.isDarkMode
+                    ? Color.fromRGBO(15, 47, 67, 1)
+                    : Colors.white,
           ),
         ),
-        content: Text(
-          '¿Está seguro de que desea cerrar sesión?',
-          style: TextStyle(fontSize: 16),
+        child: AlertDialog(
+          title: Text(
+            'Confirmación',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color:
+                  themeModel.isDarkMode
+                      ? Colors.white
+                      : const Color.fromARGB(255, 17, 46, 88),
+            ),
+          ),
+          content: Text(
+            '¿Está seguro de que desea cerrar sesión?',
+            style: TextStyle(
+              fontSize: 16,
+              color: themeModel.isDarkMode ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                // **1. Resetear el Provider**
+                themeModel
+                    .reset(); // Restablece el estado del tema (o cualquier otro Provider)
+
+                // **2. Navegar al Login y limpiar la pila**
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => Login()),
+                  (route) => false,
+                );
+              },
+              child: Text(
+                'Aceptar',
+                style: TextStyle(
+                  color: const Color.fromARGB(255, 255, 0, 0),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancelar',
+                style: TextStyle(
+                  color:
+                      themeModel.isDarkMode
+                          ? const Color.fromRGBO(140, 189, 210, 1)
+                          : const Color.fromARGB(255, 17, 46, 88),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => Login()),
-                (route) => false,
-              );
-            },
-            child: Text(
-              'Aceptar',
-              style: TextStyle(
-                color: const Color.fromARGB(255, 255, 0, 0),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Cerrar el diálogo
-            },
-            child: Text(
-              'Cancelar',
-              style: TextStyle(
-                color: const Color.fromARGB(255, 17, 46, 88),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       );
     },
   );
