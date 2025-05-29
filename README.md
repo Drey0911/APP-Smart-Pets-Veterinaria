@@ -1,16 +1,15 @@
-# proyecto
+# Smart Pets
 
-A new Flutter project.
+Este proyecto es un aplicacion veterinaria para la gestion de mascotas y citas medicas
+relacionadas a las mismas
 
-## Getting Started
+## Tecnologias
 
-This project is a starting point for a Flutter application.
+Este proyecto fue realizado con Dart, con su framework FLUTTER y distintas librerias importadas
+tambien, cuenta con una relacion de base de datos a FIREBASE haciendo uso del autenticator y del
+storage, como tambien de su realtime database
 
-A few resources to get you started if this is your first Flutter project:
+## Creador
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Andrey Stteven Mantilla Leon 
+Ing. Sistemas
