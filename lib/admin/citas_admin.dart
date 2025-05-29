@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:provider/provider.dart';
+import 'package:proyecto/theme_model.dart';
 
 // ===========================================================================
 // PANTALLA DE CITAS (ADMIN - TODAS LAS CITAS)
@@ -96,6 +98,10 @@ class CitasAdminState extends State<CitasAdmin> {
 
   Future<void> _actualizarEstadoCita(String citaId, String nuevoEstado) async {
     try {
+      // actualizar de la bd 'nuevoEstado'
+      await _citasRef.child(citaId).update({'nuevoEstado': nuevoEstado});
+
+      // Luego actualizar 'estado' con el valor de 'nuevoEstado'
       await _citasRef.child(citaId).update({'estado': nuevoEstado});
 
       // Obtener los datos de la cita para actualizar el horario del profesional
@@ -174,18 +180,21 @@ class CitasAdminState extends State<CitasAdmin> {
     String estadoActual,
   ) async {
     String? nuevoEstado;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color azulOscuro = isDark ? Colors.white : const Color(0xFF1E4B69);
 
     if (estadoActual == 'PENDIENTE') {
       nuevoEstado = await showDialog<String>(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text(
+            backgroundColor:
+                isDark
+                    ? const Color(0xFF1E4B69).withOpacity(0.95)
+                    : Colors.white,
+            title: Text(
               'Cambiar estado de la cita',
-              style: TextStyle(
-                color: Color(0xFF1E4B69), // azul oscuro
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: azulOscuro, fontWeight: FontWeight.bold),
             ),
             content: const Text(
               'Seleccione el nuevo estado de la cita actual:',
@@ -193,24 +202,28 @@ class CitasAdminState extends State<CitasAdmin> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, 'CONFIRMADA'),
-                child: const Text(
+                child: Text(
                   'Confirmar Cita',
-                  style: TextStyle(color: Colors.blue),
+                  style: TextStyle(
+                    color: isDark ? Colors.lightBlue[200] : Colors.blue,
+                  ),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, 'RECHAZADA'),
-                child: const Text(
+                child: Text(
                   'Rechazar Cita',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(
+                    color: isDark ? Colors.red[200] : Colors.red,
+                  ),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
+                child: Text(
                   'Cerrar',
                   style: TextStyle(
-                    color: Color(0xFF1E4B69), // azul oscuro
+                    color: azulOscuro,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -224,30 +237,31 @@ class CitasAdminState extends State<CitasAdmin> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text(
+            backgroundColor:
+                isDark
+                    ? const Color(0xFF1E4B69).withOpacity(0.95)
+                    : Colors.white,
+            title: Text(
               'Cambiar estado de la cita',
-              style: TextStyle(
-                color: Color(0xFF1E4B69), // azul oscuro
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: azulOscuro, fontWeight: FontWeight.bold),
             ),
             content: const Text('¿Marcar como completada?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, 'COMPLETADA'),
-                child: const Text(
+                child: Text(
                   'Completar',
                   style: TextStyle(
-                    color: Colors.green, // azul oscuro
+                    color: isDark ? Colors.green[200] : Colors.green,
                   ),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
+                child: Text(
                   'Cerrar',
                   style: TextStyle(
-                    color: Color(0xFF1E4B69), // azul oscuro
+                    color: azulOscuro,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -265,6 +279,7 @@ class CitasAdminState extends State<CitasAdmin> {
 
   @override
   Widget build(BuildContext context) {
+    final themeModel = Provider.of<ThemeModel>(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -331,7 +346,9 @@ class CitasAdminState extends State<CitasAdmin> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onBackground.withOpacity(0.9),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(30),
                     topRight: Radius.circular(30),
@@ -353,14 +370,26 @@ class CitasAdminState extends State<CitasAdmin> {
                               Icon(
                                 Icons.event_note,
                                 size: 80,
-                                color: const Color(0xFF1E4B69).withOpacity(0.5),
+                                color:
+                                    Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white70
+                                        : const Color(
+                                          0xFF1E4B69,
+                                        ).withOpacity(0.7),
                               ),
                               const SizedBox(height: 16),
-                              const Text(
-                                'No hay citas disponibles',
+                              Text(
+                                'No hay Citas agendadas',
                                 style: TextStyle(
                                   fontSize: 18,
-                                  color: Color(0xFF1E4B69),
+                                  color:
+                                      Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white70
+                                          : const Color(
+                                            0xFF1E4B69,
+                                          ).withOpacity(0.7),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -409,11 +438,68 @@ class CitasAdminState extends State<CitasAdmin> {
                               Color estadoColor,
                               String estadoText,
                             ) = switch (cita['estado']) {
-                              'PENDIENTE' => (Colors.orange, 'Pendiente'),
-                              'CONFIRMADA' => (Colors.blue, 'Confirmada'),
-                              'COMPLETADA' => (Colors.green, 'Completada'),
-                              'RECHAZADA' => (Colors.red, 'Rechazada'),
-                              _ => (Colors.grey, cita['estado']),
+                              'PENDIENTE' => (
+                                themeModel.isDarkMode
+                                    ? const Color(
+                                      0xFFFFD580,
+                                    ) // pastel orange (dark)
+                                    : const Color.fromARGB(
+                                      255,
+                                      255,
+                                      174,
+                                      52,
+                                    ), // pastel orange (light)
+                                'Pendiente',
+                              ),
+                              'CONFIRMADA' => (
+                                themeModel.isDarkMode
+                                    ? const Color(
+                                      0xFF90CAF9,
+                                    ) // pastel blue (dark)
+                                    : const Color.fromARGB(
+                                      255,
+                                      98,
+                                      173,
+                                      234,
+                                    ), // pastel blue (light)
+                                'Confirmada',
+                              ),
+                              'COMPLETADA' => (
+                                themeModel.isDarkMode
+                                    ? const Color(
+                                      0xFFA5D6A7,
+                                    ) // pastel green (dark)
+                                    : const Color.fromARGB(
+                                      255,
+                                      57,
+                                      151,
+                                      60,
+                                    ), // pastel green (light)
+                                'Completada',
+                              ),
+                              'RECHAZADA' => (
+                                themeModel.isDarkMode
+                                    ? const Color(
+                                      0xFFEF9A9A,
+                                    ) // pastel red (dark)
+                                    : const Color.fromARGB(
+                                      255,
+                                      142,
+                                      48,
+                                      58,
+                                    ), // pastel red (light)
+                                'Rechazada',
+                              ),
+                              _ => (
+                                themeModel.isDarkMode
+                                    ? const Color(
+                                      0xFFB0BEC5,
+                                    ) // pastel grey (dark)
+                                    : const Color(
+                                      0xFFCFD8DC,
+                                    ), // pastel grey (light)
+                                cita['estado'],
+                              ),
                             };
 
                             return Card(
@@ -425,11 +511,17 @@ class CitasAdminState extends State<CitasAdmin> {
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(15),
-                                  gradient: LinearGradient(
-                                    colors: [Colors.white, Colors.grey.shade50],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+
+                                  color:
+                                      Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Color.fromRGBO(
+                                            15,
+                                            47,
+                                            67,
+                                            1,
+                                          ).withOpacity(0.85)
+                                          : Colors.white.withOpacity(0.95),
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
@@ -478,13 +570,29 @@ class CitasAdminState extends State<CitasAdmin> {
                                                     Flexible(
                                                       child: Text(
                                                         '${cita['tipo']}',
-                                                        style: const TextStyle(
+                                                        style: TextStyle(
                                                           fontSize: 17,
                                                           fontWeight:
-                                                              FontWeight.w600,
-                                                          color: Color(
-                                                            0xFF1E3A5F,
-                                                          ),
+                                                              FontWeight.bold,
+                                                          color:
+                                                              Theme.of(
+                                                                        context,
+                                                                      ).brightness ==
+                                                                      Brightness
+                                                                          .dark
+                                                                  ? Colors.white
+                                                                      .withOpacity(
+                                                                        0.85,
+                                                                      )
+                                                                  : const Color.fromARGB(
+                                                                    255,
+                                                                    14,
+                                                                    53,
+                                                                    79,
+                                                                  ).withOpacity(
+                                                                    0.85,
+                                                                  ),
+                                                          height: 1.4,
                                                         ),
                                                         overflow:
                                                             TextOverflow
@@ -660,14 +768,29 @@ class CitasAdminState extends State<CitasAdmin> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade600),
+          Icon(
+            icon,
+            size: 16,
+            color:
+                Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70.withOpacity(0.70)
+                    : const Color.fromARGB(255, 14, 53, 79).withOpacity(0.70),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: RichText(
               text: TextSpan(
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey.shade700,
+                  color:
+                      Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white70.withOpacity(0.70)
+                          : const Color.fromARGB(
+                            255,
+                            8,
+                            37,
+                            56,
+                          ).withOpacity(0.70),
                   height: 1.4,
                 ),
                 children: [
@@ -1015,34 +1138,98 @@ class _FormularioCitaState extends State<FormularioCita> {
   }
 
   Future<void> _seleccionarFecha() async {
-    final DateTime? picked = await showDatePicker(
+    return showDialog(
       context: context,
-      initialDate: _fechaSeleccionada ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: const Color.fromARGB(255, 24, 54, 92),
-              onPrimary: Colors.white,
-              onSurface: Colors.black,
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: const Color.fromARGB(255, 24, 54, 92),
+      builder: (BuildContext context) {
+        return Consumer<ThemeModel>(
+          builder: (context, themeModel, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.light(
+                  primary:
+                      themeModel.isDarkMode
+                          ? Color.fromRGBO(121, 167, 199, 1)
+                          : const Color.fromRGBO(30, 75, 105, 1),
+                  onPrimary: Colors.white,
+                  onSurface:
+                      themeModel.isDarkMode ? Colors.white : Colors.black,
+                ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor:
+                        themeModel.isDarkMode
+                            ? Color.fromRGBO(121, 167, 199, 1)
+                            : const Color.fromRGBO(30, 75, 105, 1),
+                  ),
+                ),
               ),
-            ),
-          ),
-          child: child!,
+              child: AlertDialog(
+                backgroundColor:
+                    themeModel.isDarkMode
+                        ? const Color.fromRGBO(15, 47, 67, 1)
+                        : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Text(
+                  'Selecciona una fecha',
+                  style: TextStyle(
+                    color:
+                        themeModel.isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1E4B69),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                content: SizedBox(
+                  width: double.maxFinite,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: ColorScheme.light(
+                        primary:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(121, 167, 199, 1)
+                                : const Color.fromRGBO(30, 75, 105, 1),
+                        onPrimary: Colors.white,
+                        surface:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(15, 47, 67, 1)
+                                : Colors.white,
+                        onSurface:
+                            themeModel.isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      textTheme: Theme.of(context).textTheme.copyWith(
+                        bodyMedium: TextStyle(
+                          color:
+                              themeModel.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black,
+                        ),
+                      ),
+                      dialogBackgroundColor:
+                          themeModel.isDarkMode
+                              ? const Color.fromRGBO(15, 47, 67, 1)
+                              : Colors.white,
+                    ),
+                    child: CalendarDatePicker(
+                      initialDate: _fechaSeleccionada ?? DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      onDateChanged: (DateTime value) {
+                        setState(() {
+                          _fechaSeleccionada = value;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
-    if (picked != null && picked != _fechaSeleccionada) {
-      setState(() {
-        _fechaSeleccionada = picked;
-      });
-    }
   }
 
   Future<void> _guardarCita() async {
@@ -1112,27 +1299,47 @@ class _FormularioCitaState extends State<FormularioCita> {
       await showDialog(
         context: context,
         builder:
-            (context) => AlertDialog(
-              title: const Text(
-                'Cita Agendada',
-                style: TextStyle(
-                  color: Color(0xFF1E4B69),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              content: const Text('La cita ha sido agendada exitosamente.'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Aceptar',
+            (context) => Consumer<ThemeModel>(
+              builder: (context, themeModel, child) {
+                return AlertDialog(
+                  backgroundColor:
+                      themeModel.isDarkMode
+                          ? const Color.fromRGBO(15, 47, 67, 1)
+                          : Colors.white,
+                  title: Text(
+                    'Cita Agendada',
                     style: TextStyle(
-                      color: Color(0xFF1E4B69),
+                      color:
+                          themeModel.isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1E4B69),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
+                  content: Text(
+                    'La cita ha sido agendada exitosamente.',
+                    style: TextStyle(
+                      color:
+                          themeModel.isDarkMode ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Aceptar',
+                        style: TextStyle(
+                          color:
+                              themeModel.isDarkMode
+                                  ? const Color.fromRGBO(121, 167, 199, 1)
+                                  : const Color(0xFF1E4B69),
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
       );
 
@@ -1213,387 +1420,486 @@ class _FormularioCitaState extends State<FormularioCita> {
     }
   }
 
-  Icon _getIcon() {
+  Icon _getIcon(ThemeModel themeModel) {
+    final color =
+        themeModel.isDarkMode
+            ? const Color.fromRGBO(121, 167, 199, 1)
+            : const Color.fromRGBO(30, 75, 105, 1);
     switch (_tipoCita) {
       case 'Peluqueria':
-        return const Icon(
-          Icons.content_cut,
-          size: 40,
-          color: Color.fromRGBO(30, 75, 105, 1),
-        );
+        return Icon(Icons.content_cut, size: 40, color: color);
       case 'Vacunacion':
-        return const Icon(
-          Icons.healing,
-          size: 40,
-          color: Color.fromRGBO(30, 75, 105, 1),
-        );
+        return Icon(Icons.healing, size: 40, color: color);
       case 'Limpieza':
-        return const Icon(
-          Icons.cleaning_services,
-          size: 40,
-          color: Color.fromRGBO(30, 75, 105, 1),
-        );
+        return Icon(Icons.cleaning_services, size: 40, color: color);
       default:
-        return const Icon(
-          Icons.medical_services,
-          size: 40,
-          color: Color.fromRGBO(30, 75, 105, 1),
-        );
+        return Icon(Icons.medical_services, size: 40, color: color);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Stack(
+    return Consumer<ThemeModel>(
+      builder: (context, themeModel, child) {
+        final backgroundColor =
+            themeModel.isDarkMode
+                ? const Color.fromRGBO(15, 47, 67, 1)
+                : Colors.white;
+        final buttonColor =
+            themeModel.isDarkMode
+                ? const Color.fromRGBO(121, 167, 199, 1)
+                : const Color.fromRGBO(30, 75, 105, 1);
+        final cancelButtonColor =
+            themeModel.isDarkMode
+                ? Colors.grey[700]
+                : const Color.fromARGB(200, 160, 160, 160);
+        final textColor = themeModel.isDarkMode ? Colors.white : Colors.black;
+        final secondaryTextColor =
+            themeModel.isDarkMode ? Colors.grey[300] : Colors.grey[700];
+        final borderColor =
+            themeModel.isDarkMode ? Colors.grey[700]! : Colors.black;
+
+        return Scaffold(
+          backgroundColor: backgroundColor,
+          body: SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 30),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color.fromRGBO(150, 193, 212, 1),
-                              Color.fromRGBO(30, 75, 105, 1),
-                            ],
+                      Stack(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 30),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color.fromRGBO(150, 193, 212, 1),
+                                  Color.fromRGBO(30, 75, 105, 1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                const SizedBox(height: 20),
+                                Center(
+                                  child: Text(
+                                    widget.cita == null
+                                        ? 'Agendar Cita'
+                                        : 'Editar Cita',
+                                    style: const TextStyle(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor:
+                                      themeModel.isDarkMode
+                                          ? const Color.fromARGB(
+                                            255,
+                                            255,
+                                            255,
+                                            255,
+                                          )
+                                          : Colors.grey.shade200,
+                                  child: _getIcon(themeModel),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  _tipoCita,
+                                  style: const TextStyle(
+                                    color: Color.fromARGB(255, 255, 255, 255),
+                                    fontSize: 18,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
-                          borderRadius: BorderRadius.circular(20),
+                          Positioned(
+                            top: 16,
+                            left: 16,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                              onPressed: () {
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 30),
+
+                      ElevatedButton(
+                        onPressed: _seleccionarFecha,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              themeModel.isDarkMode
+                                  ? const Color.fromRGBO(15, 47, 67, 1)
+                                  : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            side: BorderSide(color: borderColor),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          _fechaSeleccionada == null
+                              ? 'Seleccionar Fecha'
+                              : 'Fecha: ${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}',
+                          style: TextStyle(color: textColor, fontSize: 16),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropdown para seleccionar cliente
+                      DropdownButtonFormField<Map<String, dynamic>>(
+                        value: _usuarioSeleccionado,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.person_outline,
+                            color: secondaryTextColor,
+                          ),
+                          labelText: 'Selecciona el cliente',
+                          labelStyle: TextStyle(color: secondaryTextColor),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          filled: true,
+                          fillColor:
+                              themeModel.isDarkMode
+                                  ? const Color.fromRGBO(15, 47, 67, 1)
+                                  : Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          isDense: true,
+                        ),
+                        isExpanded: true,
+                        itemHeight: 60,
+                        style: TextStyle(fontSize: 14, color: textColor),
+                        dropdownColor:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(15, 74, 110, 1)
+                                : Colors.white,
+                        items:
+                            _clientes.map((cliente) {
+                              return DropdownMenuItem<Map<String, dynamic>>(
+                                value: cliente,
+                                child: Container(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 280,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        cliente['nombre'] ?? 'Sin nombre',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                          color: textColor,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (nuevoCliente) {
+                          setState(() {
+                            _usuarioSeleccionado = nuevoCliente;
+                            _mascotaSeleccionada = null;
+                            if (nuevoCliente != null) {
+                              _cargarMascotasEnTiempoReal(nuevoCliente['uid']);
+                            } else {
+                              _mascotasUsuario = [];
+                            }
+                          });
+                        },
+                        validator:
+                            (value) =>
+                                value == null ? 'Selecciona un cliente' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropdown para profesionales con horarios
+                      DropdownButtonFormField<String>(
+                        value: _doctorSeleccionado,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.person,
+                            color: secondaryTextColor,
+                          ),
+                          labelText: 'Selecciona el profesional',
+                          labelStyle: TextStyle(color: secondaryTextColor),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          filled: true,
+                          fillColor:
+                              themeModel.isDarkMode
+                                  ? const Color.fromRGBO(15, 47, 67, 1)
+                                  : Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 15,
+                          ),
+                        ),
+                        dropdownColor:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(15, 74, 110, 1)
+                                : Colors.white,
+                        style: TextStyle(color: textColor),
+                        items:
+                            _profesionales.map((profesional) {
+                              return DropdownMenuItem<String>(
+                                value: profesional['uid'],
+                                child: Text(
+                                  profesional['nombre'],
+                                  style: TextStyle(color: textColor),
+                                ),
+                              );
+                            }).toList(),
+                        onChanged: (nuevoProfesionalUid) {
+                          if (nuevoProfesionalUid != null) {
+                            final profesional = _profesionales.firstWhere(
+                              (p) => p['uid'] == nuevoProfesionalUid,
+                            );
+                            setState(() {
+                              _doctorSeleccionado = nuevoProfesionalUid;
+                              _actualizarHorariosDisponibles(profesional);
+                            });
+                          }
+                        },
+                        validator:
+                            (value) =>
+                                value == null
+                                    ? 'Selecciona un profesional'
+                                    : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropdown para horarios disponibles del profesional
+                      DropdownButtonFormField<String>(
+                        value: _horaSeleccionada,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.access_time,
+                            color: secondaryTextColor,
+                          ),
+                          labelText: 'Selecciona la hora',
+                          labelStyle: TextStyle(color: secondaryTextColor),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          filled: true,
+                          fillColor:
+                              themeModel.isDarkMode
+                                  ? const Color.fromRGBO(15, 47, 67, 1)
+                                  : Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 15,
+                          ),
+                        ),
+                        dropdownColor:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(15, 74, 110, 1)
+                                : Colors.white,
+                        style: TextStyle(color: textColor),
+                        items:
+                            (_doctorSeleccionado != null &&
+                                    _horariosDisponibles.containsKey(
+                                      _doctorSeleccionado,
+                                    ))
+                                ? _horariosDisponibles[_doctorSeleccionado]!
+                                    .map(
+                                      (hora) => DropdownMenuItem<String>(
+                                        value: hora,
+                                        child: Text(
+                                          hora,
+                                          style: TextStyle(color: textColor),
+                                        ),
+                                      ),
+                                    )
+                                    .toList()
+                                : [],
+                        onChanged: (nuevaHora) {
+                          setState(() {
+                            _horaSeleccionada = nuevaHora;
+                          });
+                        },
+                        validator:
+                            (value) =>
+                                value == null ? 'Selecciona una hora' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Dropdown para mascotas (solo disponible si se seleccionó un usuario)
+                      DropdownButtonFormField<Map<String, dynamic>>(
+                        value: _mascotaSeleccionada,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.pets,
+                            color: secondaryTextColor,
+                          ),
+                          labelText: 'Selecciona la mascota',
+                          labelStyle: TextStyle(color: secondaryTextColor),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(30),
+                            borderSide: BorderSide(color: borderColor),
+                          ),
+                          filled: true,
+                          fillColor:
+                              themeModel.isDarkMode
+                                  ? const Color.fromRGBO(15, 47, 67, 1)
+                                  : Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 15,
+                          ),
+                        ),
+                        dropdownColor:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(15, 74, 110, 1)
+                                : Colors.white,
+                        style: TextStyle(color: textColor),
+                        items:
+                            _mascotasUsuario.map((mascota) {
+                              return DropdownMenuItem<Map<String, dynamic>>(
+                                value: mascota,
+                                child: Text(
+                                  '${mascota['nombre']} - ${mascota['raza']}',
+                                  style: TextStyle(color: textColor),
+                                ),
+                              );
+                            }).toList(),
+                        onChanged:
+                            _usuarioSeleccionado != null
+                                ? (nuevaMascota) {
+                                  setState(() {
+                                    _mascotaSeleccionada = nuevaMascota;
+                                  });
+                                }
+                                : null,
+                        validator:
+                            (value) =>
+                                value == null ? 'Selecciona una mascota' : null,
+                      ),
+                      const SizedBox(height: 24),
+
+                      ElevatedButton(
+                        onPressed: _guardando ? null : _guardarCita,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: buttonColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child:
+                            _guardando
+                                ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : const Text(
+                                  'Agendar Cita',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: cancelButtonColor,
+                          borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.3),
+                              spreadRadius: 0,
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            Center(
-                              child: Text(
-                                widget.cita == null
-                                    ? 'Agendar Cita'
-                                    : 'Editar Cita',
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
+                        child: TextButton(
+                          onPressed:
+                              _guardando ? null : () => Navigator.pop(context),
+                          child: const Text(
+                            'Cancelar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 20),
-                            CircleAvatar(
-                              radius: 50,
-                              backgroundColor: Colors.grey.shade200,
-                              child: _getIcon(),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              _tipoCita,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: 28,
                           ),
-                          onPressed: () => Navigator.pop(context),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30),
-
-                  ElevatedButton(
-                    onPressed: _seleccionarFecha,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: const BorderSide(color: Colors.black),
-                    ),
-                    child: Text(
-                      _fechaSeleccionada == null
-                          ? 'Seleccionar Fecha'
-                          : 'Fecha: ${_fechaSeleccionada!.day}/${_fechaSeleccionada!.month}/${_fechaSeleccionada!.year}',
-                      style: const TextStyle(color: Colors.black, fontSize: 16),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Dropdown para seleccionar cliente - Versión optimizada
-                  DropdownButtonFormField<Map<String, dynamic>>(
-                    value: _usuarioSeleccionado,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(
-                        Icons.person_outline,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                      labelText: 'Selecciona el cliente',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      isDense: true,
-                    ),
-                    isExpanded: true,
-                    itemHeight: 60, // Altura óptima para dos líneas
-                    style: const TextStyle(fontSize: 14),
-                    items:
-                        _clientes.map((cliente) {
-                          return DropdownMenuItem<Map<String, dynamic>>(
-                            value: cliente,
-                            child: Container(
-                              constraints: const BoxConstraints(
-                                maxWidth: 280,
-                              ), // Limita el ancho máximo
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    cliente['nombre'] ?? 'Sin nombre',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                    onChanged: (nuevoCliente) {
-                      setState(() {
-                        _usuarioSeleccionado = nuevoCliente;
-                        _mascotaSeleccionada = null;
-                        if (nuevoCliente != null) {
-                          _cargarMascotasEnTiempoReal(nuevoCliente['uid']);
-                        } else {
-                          _mascotasUsuario = [];
-                        }
-                      });
-                    },
-                    validator:
-                        (value) =>
-                            value == null ? 'Selecciona un cliente' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Dropdown para profesionales con horarios
-                  DropdownButtonFormField<String>(
-                    value: _doctorSeleccionado,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(
-                        Icons.person,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                      labelText: 'Selecciona el profesional',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                    ),
-                    items:
-                        _profesionales.map((profesional) {
-                          return DropdownMenuItem<String>(
-                            value: profesional['uid'],
-                            child: Text(profesional['nombre']),
-                          );
-                        }).toList(),
-                    onChanged: (nuevoProfesionalUid) {
-                      if (nuevoProfesionalUid != null) {
-                        final profesional = _profesionales.firstWhere(
-                          (p) => p['uid'] == nuevoProfesionalUid,
-                        );
-                        setState(() {
-                          _doctorSeleccionado = nuevoProfesionalUid;
-                          _actualizarHorariosDisponibles(profesional);
-                        });
-                      }
-                    },
-                    validator:
-                        (value) =>
-                            value == null ? 'Selecciona un profesional' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Dropdown para horarios disponibles del profesional
-                  DropdownButtonFormField<String>(
-                    value: _horaSeleccionada,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(
-                        Icons.access_time,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                      labelText: 'Selecciona la hora',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                    ),
-                    items:
-                        (_doctorSeleccionado != null &&
-                                _horariosDisponibles.containsKey(
-                                  _doctorSeleccionado,
-                                ))
-                            ? _horariosDisponibles[_doctorSeleccionado]!
-                                .map(
-                                  (hora) => DropdownMenuItem<String>(
-                                    value: hora,
-                                    child: Text(hora),
-                                  ),
-                                )
-                                .toList()
-                            : [],
-                    onChanged: (nuevaHora) {
-                      setState(() {
-                        _horaSeleccionada = nuevaHora;
-                      });
-                    },
-                    validator:
-                        (value) => value == null ? 'Selecciona una hora' : null,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Dropdown para mascotas (solo disponible si se seleccionó un usuario)
-                  DropdownButtonFormField<Map<String, dynamic>>(
-                    value: _mascotaSeleccionada,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(
-                        Icons.pets,
-                        color: Colors.black.withOpacity(0.5),
-                      ),
-                      labelText: 'Selecciona la mascota',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 15,
-                      ),
-                    ),
-                    items:
-                        _mascotasUsuario.map((mascota) {
-                          return DropdownMenuItem<Map<String, dynamic>>(
-                            value: mascota,
-                            child: Text(
-                              '${mascota['nombre']} - ${mascota['raza']}',
-                            ),
-                          );
-                        }).toList(),
-                    onChanged:
-                        _usuarioSeleccionado != null
-                            ? (nuevaMascota) {
-                              setState(() {
-                                _mascotaSeleccionada = nuevaMascota;
-                              });
-                            }
-                            : null,
-                    validator:
-                        (value) =>
-                            value == null ? 'Selecciona una mascota' : null,
-                  ),
-                  const SizedBox(height: 24),
-
-                  ElevatedButton(
-                    onPressed: _guardando ? null : _guardarCita,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color.fromRGBO(30, 75, 105, 1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child:
-                        _guardando
-                            ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                            : const Text(
-                              'Agendar Cita',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(200, 160, 160, 160),
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.3),
-                          spreadRadius: 0,
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TextButton(
-                      onPressed:
-                          _guardando ? null : () => Navigator.pop(context),
-                      child: const Text(
-                        'Cancelar',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

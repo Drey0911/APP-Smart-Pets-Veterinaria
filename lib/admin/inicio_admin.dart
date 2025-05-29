@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:proyecto/theme_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
@@ -37,12 +39,19 @@ class InicioAdminApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      debugShowCheckedModeBanner: false,
-      title: 'SmartPets Menú',
-      theme: ThemeData(primarySwatch: Colors.indigo),
-      home: MyHomePage(uid: uid),
+    return ChangeNotifierProvider(
+      create: (_) => ThemeModel(uid),
+      child: Consumer<ThemeModel>(
+        builder: (context, themeModel, child) {
+          return MaterialApp(
+            scaffoldMessengerKey: scaffoldMessengerKey,
+            debugShowCheckedModeBanner: false,
+            title: 'SmartPets Menú',
+            theme: themeModel.currentTheme, // Usa el tema dinámico
+            home: MyHomePage(uid: uid),
+          );
+        },
+      ),
     );
   }
 }
@@ -196,16 +205,30 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final themeModel = Provider.of<ThemeModel>(context);
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Color.fromRGBO(30, 75, 105, 1), // Fondo azul oscuro
+          backgroundColor:
+              themeModel.isDarkMode
+                  ? const Color.fromRGBO(
+                    30,
+                    75,
+                    105,
+                    1,
+                  ) // Color oscuro del tema
+                  : const Color.fromRGBO(30, 75, 105, 1), // Color azul original
           title: Row(
             children: [
               Icon(
                 Icons.pets,
-                color: Colors.white, // Icono blanco para contraste
+                color:
+                    themeModel.isDarkMode
+                        ? Colors
+                            .white70 // Color para tema oscuro
+                        : Colors.white, // Color para tema claro
                 size: 28,
               ),
               const SizedBox(width: 8),
@@ -214,13 +237,21 @@ class _MyHomePageState extends State<MyHomePage> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
-                  color: Colors.white, // Texto blanco
+                  color:
+                      themeModel.isDarkMode
+                          ? Colors
+                              .white70 // Color para tema oscuro
+                          : Colors.white, // Color para tema claro
                 ),
               ),
             ],
           ),
-          iconTheme: const IconThemeData(
-            color: Colors.white, // Color para todos los íconos de la AppBar
+          iconTheme: IconThemeData(
+            color:
+                themeModel.isDarkMode
+                    ? Colors
+                        .white70 // Color para tema oscuro
+                    : Colors.white, // Color para tema claro
           ),
           actions: [
             Stack(
@@ -268,9 +299,12 @@ class _MyHomePageState extends State<MyHomePage> {
         body: IndexedStack(index: _selectedIndex, children: _pages),
         bottomNavigationBar: Container(
           height: 88,
-          decoration: const BoxDecoration(
-            color: Color(0xFFECECEC),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color:
+                themeModel.isDarkMode
+                    ? Color.fromRGBO(15, 47, 67, 1)
+                    : const Color(0xFFECECEC),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -282,7 +316,12 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue[100] : Colors.transparent,
+                      color:
+                          isSelected
+                              ? (themeModel.isDarkMode
+                                  ? const Color.fromARGB(128, 122, 198, 241)
+                                  : Colors.blue[100])
+                              : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -290,14 +329,22 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         Icon(
                           _getIconForIndex(index),
-                          color: const Color(0xFF0A3C5E),
+                          color:
+                              themeModel.isDarkMode
+                                  ? Colors
+                                      .white70 // Color para tema oscuro
+                                  : const Color(0xFF0A3C5E),
                           size: 30,
                         ),
                         const SizedBox(height: 4),
                         Text(
                           _getLabelForIndex(index),
                           style: TextStyle(
-                            color: const Color(0xFF0A3C5E),
+                            color:
+                                themeModel.isDarkMode
+                                    ? Colors
+                                        .white70 // Color para tema oscuro
+                                    : const Color(0xFF0A3C5E),
                             fontSize: 16,
                             fontWeight:
                                 isSelected
@@ -470,6 +517,8 @@ class _PaginaInicioState extends State<PaginaInicio> {
 
   @override
   Widget build(BuildContext context) {
+    final themeModel = Provider.of<ThemeModel>(context);
+
     return SingleChildScrollView(
       child: Column(
         children: [
@@ -480,16 +529,28 @@ class _PaginaInicioState extends State<PaginaInicio> {
               alignment: Alignment.centerLeft,
               child: RichText(
                 text: TextSpan(
-                  style: const TextStyle(
-                    color: Color.fromARGB(255, 17, 46, 88),
+                  style: TextStyle(
+                    color:
+                        themeModel.isDarkMode
+                            ? Colors
+                                .white70 // Color para tema oscuro
+                            : const Color.fromARGB(
+                              255,
+                              17,
+                              46,
+                              88,
+                            ), // Color original
                     fontSize: 23,
                   ),
                   children: [
-                    const WidgetSpan(
+                    WidgetSpan(
                       alignment: PlaceholderAlignment.middle,
                       child: Icon(
                         Icons.admin_panel_settings,
-                        color: Color.fromARGB(255, 17, 46, 88),
+                        color:
+                            themeModel.isDarkMode
+                                ? Colors.white70
+                                : const Color.fromARGB(255, 17, 46, 88),
                         size: 28,
                       ),
                     ),
@@ -569,7 +630,16 @@ class _PaginaInicioState extends State<PaginaInicio> {
               child: Text(
                 'Servicios:',
                 style: TextStyle(
-                  color: const Color.fromARGB(255, 17, 46, 88),
+                  color:
+                      themeModel.isDarkMode
+                          ? Colors
+                              .white70 // Color para tema oscuro
+                          : const Color.fromARGB(
+                            255,
+                            17,
+                            46,
+                            88,
+                          ), // Color original
                   fontSize: 23,
                   fontWeight: FontWeight.bold,
                 ),

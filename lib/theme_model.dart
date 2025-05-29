@@ -134,6 +134,7 @@ class ThemeModel with ChangeNotifier {
   }
 
   // Restablece el estado del tema a los valores predeterminados
+  // notificar a los demas
   void reset() {
     _isDarkMode = false;
     notifyListeners();

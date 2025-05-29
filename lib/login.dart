@@ -1,8 +1,9 @@
+// Importacion de paquetes y dependencias del archivo
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'admin/inicio_admin.dart';
-import 'inicio.dart';
+import 'dart:io';
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -12,6 +13,10 @@ class Login extends StatelessWidget {
     return Scaffold(backgroundColor: Colors.transparent, body: AuthScreen());
   }
 }
+
+// ===========================================================================
+// PANTALLA DE LOGIN
+// ===========================================================================
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -25,68 +30,60 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
 
+  // funcion asicnrona para el inicio de sesion
   Future<void> _login() async {
     if (emailController.text.isEmpty || passwordController.text.isEmpty) {
       _showErrorDialog('Por favor, completa todos los campos');
       return;
     }
 
+    if (!RegExp(
+      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+    ).hasMatch(emailController.text.trim())) {
+      _showErrorDialog('Por favor, ingresa un correo electrónico válido');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final UserCredential userCredential = await FirebaseAuth.instance
+      final UserCredential _ = await FirebaseAuth.instance
           .signInWithEmailAndPassword(
             email: emailController.text.trim(),
             password: passwordController.text,
           )
           .timeout(const Duration(seconds: 15));
 
-      if (userCredential.user != null) {
-        final uid = userCredential.user!.uid;
-        final databaseRef = FirebaseDatabase.instance.ref();
-        final userSnapshot = await databaseRef.child('usuarios/$uid').get();
-
-        if (userSnapshot.exists) {
-          final userData = userSnapshot.value as Map<dynamic, dynamic>;
-          final String rol =
-              userData['rol'] ??
-              'Cliente'; // Obtener el rol o usar 'Cliente' por defecto
-
-          // Redireccionar según el rol
-          if (rol == 'Administrador') {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => InicioAdminApp(uid: userCredential.user!.uid),
-              ),
-            );
-          } else {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => InicioApp(uid: userCredential.user!.uid),
-              ),
-            );
-          }
-        }
-      }
+      // validaciones de autenticator
+    } on TimeoutException catch (_) {
+      _showErrorDialog(
+        'El inicio de sesión tardó demasiado. Verifica tu conexión a internet.',
+      );
+    } on SocketException catch (_) {
+      _showErrorDialog('No hay conexión a internet. Verifica tu conexión.');
     } on FirebaseAuthException catch (e) {
-      String errorMessage = 'Error al iniciar sesión';
-      if (e.code == 'user-not-found') {
-        errorMessage = 'No existe usuario con este correo electrónico';
-      } else if (e.code == 'wrong-password') {
-        errorMessage = 'Contraseña incorrecta';
+      debugPrint('Error Firebase Auth: ${e.code}');
+
+      String errorMessage;
+      if (e.code == 'invalid-credential' || e.code == 'wrong-password') {
+        errorMessage = 'Correo o contraseña incorrectos';
       } else if (e.code == 'invalid-email') {
-        errorMessage = 'El formato del correo electrónico no es válido';
+        errorMessage = 'Formato de correo electrónico inválido';
+      } else if (e.code == 'user-not-found') {
+        errorMessage = 'No existe cuenta con este correo';
       } else if (e.code == 'user-disabled') {
-        errorMessage = 'Esta cuenta ha sido deshabilitada';
+        errorMessage = 'Cuenta deshabilitada. Contacta al soporte';
+      } else if (e.code == 'too-many-requests') {
+        errorMessage = 'Demasiados intentos. Intenta más tarde';
+      } else if (e.code == 'network-request-failed') {
+        errorMessage = 'Error de conexión a internet';
+      } else {
+        errorMessage = 'Error de autenticación: ${e.code}';
       }
       _showErrorDialog(errorMessage);
     } catch (e) {
-      _showErrorDialog(
-        'Ha ocurrido un error inesperado. Por favor, inténtalo de nuevo.',
-      );
+      _showErrorDialog('Error inesperado: ${e.toString()}');
+      debugPrint('Error completo: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -138,7 +135,6 @@ class _AuthScreenState extends State<AuthScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Ícono personalizado con efecto de sombra
           Container(
             width: 150,
             height: 150,
@@ -163,10 +159,7 @@ class _AuthScreenState extends State<AuthScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Image.asset(
-                'images/icon.png', // Usa tu imagen personalizada
-                fit: BoxFit.contain,
-              ),
+              child: Image.asset('images/icon.png', fit: BoxFit.contain),
             ),
           ),
           const SizedBox(height: 20),
@@ -185,7 +178,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 color: Colors.white,
                 size: 40,
               ),
-              const SizedBox(width: 10), // Espaciado entre el icono y el texto
+              const SizedBox(width: 10),
               Text(
                 'Cargando...',
                 style: TextStyle(
@@ -204,7 +197,6 @@ class _AuthScreenState extends State<AuthScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Mensaje de bienvenida
           Text(
             'Un momento por favor',
             style: TextStyle(
@@ -464,6 +456,10 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
+// ===========================================================================
+// PANTALLA DE REGISTRO
+// ===========================================================================
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -483,7 +479,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Ícono personalizado con efecto de sombra
           Container(
             width: 150,
             height: 150,
@@ -508,10 +503,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Image.asset(
-                'images/icon.png', // Usa tu imagen personalizada
-                fit: BoxFit.contain,
-              ),
+              child: Image.asset('images/icon.png', fit: BoxFit.contain),
             ),
           ),
           const SizedBox(height: 20),
@@ -530,7 +522,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 color: Colors.white,
                 size: 40,
               ),
-              const SizedBox(width: 10), // Espaciado entre el icono y el texto
+              const SizedBox(width: 10),
               Text(
                 'Cargando...',
                 style: TextStyle(
@@ -549,7 +541,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          // Mensaje de bienvenida
           Text(
             'Un momento por favor',
             style: TextStyle(
@@ -571,6 +562,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // funcion asincrona para el registro del usuario
   Future<void> _register() async {
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
@@ -657,7 +649,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             actions: <Widget>[
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Cerrar el diálogo
+                  Navigator.of(context).pop();
                 },
                 child: Text(
                   'Cerrar',
@@ -677,18 +669,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
+            backgroundColor:
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF223344)
+                    : Colors.white,
             title: Text(
               'Éxito',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 17, 46, 88),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color.fromARGB(255, 17, 46, 88),
               ),
             ),
             content: Text(
               message,
               style: TextStyle(
                 fontSize: 16,
-                color: const Color.fromARGB(255, 0, 0, 0),
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : const Color.fromARGB(255, 0, 0, 0),
               ),
             ),
             actions: [
@@ -697,7 +699,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Text(
                   'Aceptar',
                   style: TextStyle(
-                    color: const Color.fromARGB(255, 17, 46, 88),
+                    color:
+                        Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFA1C6D7)
+                            : const Color.fromARGB(255, 17, 46, 88),
                     fontWeight: FontWeight.bold,
                   ),
                 ),

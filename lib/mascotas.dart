@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as Path;
+import 'package:path/path.dart'
+    as Path; //se utiliza para manipular rutas de archivos y directorios de manera multiplataforma
 import 'package:provider/provider.dart';
 import 'package:proyecto/theme_model.dart';
 
@@ -135,8 +136,6 @@ class _MascotasState extends State<Mascotas> {
         // Cerrar diálogo de carga y mostrar mensaje
         Navigator.of(dialogContext, rootNavigator: true).pop();
         _mostrarMensajeExito('Mascota agregada exitosamente');
-
-        // No es necesario llamar a _cargarMascotas() porque el listener de onValue se actualizará automáticamente
       } catch (e) {
         Navigator.of(dialogContext, rootNavigator: true).pop();
         _mostrarErrorDialog("Error al agregar mascota: $e");
@@ -476,7 +475,7 @@ class _MascotasState extends State<Mascotas> {
 
   @override
   Widget build(BuildContext context) {
-    final themeModel = Provider.of<ThemeModel>(context);
+    Provider.of<ThemeModel>(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -651,7 +650,6 @@ class _MascotasState extends State<Mascotas> {
                                   padding: const EdgeInsets.all(16),
                                   child: Row(
                                     children: [
-                                      // Avatar con gradiente de fondo
                                       Container(
                                         width: 60,
                                         height: 60,
@@ -952,6 +950,10 @@ class _MascotasState extends State<Mascotas> {
     );
   }
 }
+
+// ===========================================================================
+// FORMULARIO PARA LA MASCOTA
+// ===========================================================================
 
 class FormularioMascota extends StatefulWidget {
   final String uid;

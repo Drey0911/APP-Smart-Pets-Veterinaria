@@ -24,17 +24,22 @@ class CitasState extends State<Citas> {
   final DatabaseReference _citasRef = FirebaseDatabase.instance.ref('citas');
   StreamSubscription<DatabaseEvent>? _citasSubscription;
   List<Map<String, dynamic>> _citas = [];
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   @override
   void initState() {
     super.initState();
+    _initializeNotifications();
     _cargarCitas();
   }
 
-  @override
-  void dispose() {
-    _citasSubscription?.cancel();
-    super.dispose();
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    final InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+    await _flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 
   void _cargarCitas() {
@@ -50,9 +55,17 @@ class CitasState extends State<Citas> {
               if (event.snapshot.exists) {
                 final data = event.snapshot.value as Map<dynamic, dynamic>;
 
-                data.forEach((key, value) {
+                data.forEach((key, value) async {
                   final cita = Map<String, dynamic>.from(value as dynamic);
+                  final citaRef = _citasRef.child(key.toString());
 
+                  // Verificar cambios de estado y mostrar notificaciones correspondientes
+                  if (cita['nuevoEstado'] != null &&
+                      cita['nuevoEstado'] != cita['estado']) {
+                    await _procesarCambioEstado(cita, citaRef);
+                  }
+
+                  // Solo mostrar citas que no estén COMPLETADAS
                   if (cita['estado'] != 'COMPLETADA') {
                     citasTemp.add({
                       'id': key.toString(),
@@ -96,7 +109,94 @@ class CitasState extends State<Citas> {
         );
   }
 
-  // Método para agregar una cita (mantenido para compatibilidad)
+  Future<void> _procesarCambioEstado(
+    Map<String, dynamic> cita,
+    DatabaseReference citaRef,
+  ) async {
+    final estadoActual = cita['estado']?.toString() ?? 'PENDIENTE';
+    final nuevoEstado = cita['nuevoEstado']?.toString();
+    final tipo = cita['tipo']?.toString() ?? 'Servicio';
+    final fecha = cita['fecha']?.toString() ?? '--/--/----';
+    final hora = cita['hora']?.toString() ?? '--:--';
+
+    // Actualizar el estado para que sea igual al nuevoEstado
+    await citaRef.update({
+      'estado': nuevoEstado,
+      'nuevoEstado': nuevoEstado, // Para evitar notificaciones repetidas
+    });
+
+    // Mostrar notificación según el cambio de estado
+    if (estadoActual == 'PENDIENTE' && nuevoEstado == 'CONFIRMADA') {
+      await _mostrarNotificacion(
+        titulo: 'CITA CONFIRMADA',
+        mensaje:
+            'Tu cita de $tipo para el $fecha a las $hora ha sido confirmada',
+        color: Colors.blue,
+      );
+    } else if (estadoActual == 'CONFIRMADA' && nuevoEstado == 'COMPLETADA') {
+      if (tipo == 'Peluqueria' || tipo == 'Limpieza') {
+        await _mostrarNotificacion(
+          titulo: 'MASCOTA LISTA',
+          mensaje: 'Ya puede pasar por su mascota, está lista',
+          color: Colors.green,
+        );
+      } else {
+        await _mostrarNotificacion(
+          titulo: 'CITA COMPLETADA',
+          mensaje: 'Tu cita de $tipo ha sido completada',
+          color: Colors.green,
+        );
+      }
+    } else if (nuevoEstado == 'RECHAZADA') {
+      await _mostrarNotificacion(
+        titulo: 'CITA RECHAZADA',
+        mensaje:
+            'Tu cita de $tipo para el $fecha a las $hora ha sido rechazada',
+        color: Colors.red,
+      );
+    }
+  }
+
+  Future<void> _mostrarNotificacion({
+    required String titulo,
+    required String mensaje,
+    required Color color,
+  }) async {
+    try {
+      final AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            'citas_estado_channel_id',
+            'Estado de Citas',
+            channelDescription:
+                'Notificaciones de cambios en el estado de citas',
+            importance: Importance.high,
+            priority: Priority.high,
+            colorized: true,
+            color: color,
+          );
+
+      final NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+      );
+
+      await _flutterLocalNotificationsPlugin.show(
+        UniqueKey().hashCode, // ID único para cada notificación
+        titulo,
+        mensaje,
+        notificationDetails,
+      );
+
+      // Guardar en SharedPreferences para el historial de notificaciones
+      final prefs = await SharedPreferences.getInstance();
+      List<String> notificaciones = prefs.getStringList('notificaciones') ?? [];
+      notificaciones.insert(0, '$titulo: $mensaje');
+      await prefs.setStringList('notificaciones', notificaciones);
+    } catch (e) {
+      print('Error al mostrar notificación: $e');
+    }
+  }
+
+  // Método para agregar una cita PARA COMPATIBILIDAD / FUNCIONALIDAD
   void addCita(Map<String, dynamic> nuevaCita, [String? uid]) {
     setState(() {
       _citas.add(nuevaCita);
@@ -104,15 +204,23 @@ class CitasState extends State<Citas> {
   }
 
   Future<void> _cancelarCita(String citaId) async {
+    final themeModel = Provider.of<ThemeModel>(context, listen: false);
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDark = themeModel.isDarkMode;
         return AlertDialog(
-          title: const Text(
+          backgroundColor:
+              isDark ? const Color.fromRGBO(15, 47, 67, 1) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
             'Cancelar Cita',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 17, 46, 88),
+              color:
+                  isDark ? Colors.white : const Color.fromARGB(255, 17, 46, 88),
             ),
           ),
           content: const Text(
@@ -122,10 +230,13 @@ class CitasState extends State<Citas> {
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 'No',
                 style: TextStyle(
-                  color: Color.fromARGB(255, 17, 46, 88),
+                  color:
+                      isDark
+                          ? const Color.fromRGBO(121, 167, 199, 1)
+                          : const Color.fromARGB(255, 17, 46, 88),
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -394,12 +505,8 @@ class CitasState extends State<Citas> {
                                             47,
                                             67,
                                             1,
-                                          ).withOpacity(
-                                            0.85,
-                                          ) // gris oscuro semitransparente
-                                          : Colors.white.withOpacity(
-                                            0.95,
-                                          ), // blanco semitransparente
+                                          ).withOpacity(0.85)
+                                          : Colors.white.withOpacity(0.95),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Padding(
@@ -464,7 +571,7 @@ class CitasState extends State<Citas> {
                                                               ? Colors.white
                                                                   .withOpacity(
                                                                     0.85,
-                                                                  ) // Blanco en modo oscuro
+                                                                  )
                                                               : const Color.fromARGB(
                                                                 255,
                                                                 14,
@@ -472,7 +579,7 @@ class CitasState extends State<Citas> {
                                                                 79,
                                                               ).withOpacity(
                                                                 0.85,
-                                                              ), // Azul en modo claro
+                                                              ),
                                                       height: 1.4,
                                                     ),
                                                     overflow:
@@ -570,7 +677,7 @@ class CitasState extends State<Citas> {
 
                                       const SizedBox(width: 8),
 
-                                      // Botón de eliminar más elegante
+                                      // Botón de eliminar
                                       IconButton(
                                         icon: Icon(
                                           Icons.delete_outline,
@@ -598,7 +705,7 @@ class CitasState extends State<Citas> {
     );
   }
 
-  // Método auxiliar para construir filas de información con iconos adaptado a modo oscuro
+  // Método auxiliar para construir filas de información con iconos
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -957,18 +1064,64 @@ class _FormularioCitaState extends State<FormularioCita> {
                 ),
               ),
               child: AlertDialog(
+                backgroundColor:
+                    themeModel.isDarkMode
+                        ? const Color.fromRGBO(15, 47, 67, 1)
+                        : Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Text(
+                  'Selecciona una fecha',
+                  style: TextStyle(
+                    color:
+                        themeModel.isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1E4B69),
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 content: SizedBox(
                   width: double.maxFinite,
-                  child: CalendarDatePicker(
-                    initialDate: _fechaSeleccionada ?? DateTime.now(),
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(const Duration(days: 365)),
-                    onDateChanged: (DateTime value) {
-                      setState(() {
-                        _fechaSeleccionada = value;
-                      });
-                      Navigator.pop(context);
-                    },
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: ColorScheme.light(
+                        primary:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(121, 167, 199, 1)
+                                : const Color.fromRGBO(30, 75, 105, 1),
+                        onPrimary: Colors.white,
+                        surface:
+                            themeModel.isDarkMode
+                                ? const Color.fromRGBO(15, 47, 67, 1)
+                                : Colors.white,
+                        onSurface:
+                            themeModel.isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      textTheme: Theme.of(context).textTheme.copyWith(
+                        bodyMedium: TextStyle(
+                          color:
+                              themeModel.isDarkMode
+                                  ? Colors.white
+                                  : Colors.black,
+                        ),
+                      ),
+                      dialogBackgroundColor:
+                          themeModel.isDarkMode
+                              ? const Color.fromRGBO(15, 47, 67, 1)
+                              : Colors.white,
+                    ),
+                    child: CalendarDatePicker(
+                      initialDate: _fechaSeleccionada ?? DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      onDateChanged: (DateTime value) {
+                        setState(() {
+                          _fechaSeleccionada = value;
+                        });
+                        Navigator.pop(context);
+                      },
+                    ),
                   ),
                 ),
               ),
@@ -1037,10 +1190,10 @@ class _FormularioCitaState extends State<FormularioCita> {
         SnackBar(
           content: Text(
             'Cita agendada con éxito para el $fecha a las $_horaSeleccionada',
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSecondary),
           ),
           duration: const Duration(seconds: 3),
-          backgroundColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: Theme.of(context).colorScheme.onPrimary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -1548,6 +1701,7 @@ class _FormularioCitaState extends State<FormularioCita> {
     );
   }
 }
+
 // ===========================================================================
 // PANTALLA HISTÓRICO DE CITAS (CITAS PASADAS)
 // ===========================================================================

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -329,7 +330,7 @@ class _PerfilState extends State<Perfil> {
   }
 }
 
-void _mostrarDialogoConfirmacion(BuildContext context) {
+void _mostrarDialogoConfirmacion(BuildContext context) async {
   final themeModel = Provider.of<ThemeModel>(context, listen: false);
 
   showDialog(
@@ -364,17 +365,24 @@ void _mostrarDialogoConfirmacion(BuildContext context) {
           ),
           actions: <Widget>[
             TextButton(
-              onPressed: () {
-                // **1. Resetear el Provider**
-                themeModel
-                    .reset(); // Restablece el estado del tema (o cualquier otro Provider)
+              onPressed: () async {
+                try {
+                  // 1. Cerrar sesión en Firebase Auth
+                  await FirebaseAuth.instance.signOut();
 
-                // **2. Navegar al Login y limpiar la pila**
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => Login()),
-                  (route) => false,
-                );
+                  // 3. Resetear el Provider
+                  themeModel.reset();
+
+                  // 4. Navegar al Login y limpiar la pila
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => Login()),
+                    (route) => false,
+                  );
+                } catch (e) {
+                  print('Error al cerrar sesión: $e');
+                  // Opcional: Mostrar un mensaje de error al usuario
+                }
               },
               child: Text(
                 'Aceptar',

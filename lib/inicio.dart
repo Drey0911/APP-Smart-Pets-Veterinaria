@@ -397,7 +397,7 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 // ===========================================================================
-// PÁGINA DE INICIO (CON CAROUSEL Y SECCIÓN DE SERVICIOS)
+// PÁGINA DE INICIO
 // ===========================================================================
 
 class PaginaInicio extends StatefulWidget {
@@ -420,7 +420,6 @@ class _PaginaInicioState extends State<PaginaInicio> {
     'images/banner3.png',
   ];
 
-  // Actualiza las URL según a dónde desees navegar
   final List<String> urls = [
     'https://www.youtube.com/watch?v=z_70XoQB5Yg',
     'https://www.youtube.com/watch?v=FVUQfoCAUGk',
@@ -637,7 +636,7 @@ class _PaginaInicioState extends State<PaginaInicio> {
               ),
             ),
           ),
-          // Sección de Servicios con botones.
+          // Sección de Servicios
           SingleChildScrollView(
             child: Container(
               margin: EdgeInsets.zero,
