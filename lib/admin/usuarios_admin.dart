@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:provider/provider.dart';
-import '../theme_model.dart'; // Asegúrate de importar tu ThemeModel
+import '../theme_model.dart';
 
 class UsuariosAdmin extends StatefulWidget {
   const UsuariosAdmin({super.key});
@@ -35,7 +35,6 @@ class _UsuariosAdminState extends State<UsuariosAdmin> {
 
             data.forEach((key, value) {
               if (value is Map) {
-                // Verificación más robusta del rol
                 final rol =
                     value['rol']?.toString() ??
                     'Cliente'; // Valor por defecto si es null
@@ -44,7 +43,7 @@ class _UsuariosAdminState extends State<UsuariosAdmin> {
                     'uid': key.toString(),
                     'nombre': value['nombre']?.toString() ?? 'Sin nombre',
                     'email': value['email']?.toString() ?? 'Sin email',
-                    'rol': rol, // Asegurarnos de incluir el rol
+                    'rol': rol,
                     'fechaRegistro': _formatDate(value['fechaRegistro']),
                   });
                 }
